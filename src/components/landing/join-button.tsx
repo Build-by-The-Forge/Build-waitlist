@@ -17,8 +17,19 @@ export function JoinButton({
       href={`#${WAITLIST_ANCHOR}`}
       onClick={(e) => {
         track("hero_cta_click", { location });
-        document.getElementById(WAITLIST_INPUT_ID)?.focus({ preventScroll: true });
         onClick?.(e);
+        const section = document.getElementById(WAITLIST_ANCHOR);
+        const input = document.getElementById(WAITLIST_INPUT_ID);
+        if (!section || !input) return; // fall back to the plain anchor jump
+        // Following the hash would reset focus, so scroll and focus ourselves.
+        e.preventDefault();
+        history.pushState(null, "", `#${WAITLIST_ANCHOR}`);
+        const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        // Next frame: lets a closing mobile menu release its scroll lock first.
+        requestAnimationFrame(() => {
+          section.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
+          input.focus({ preventScroll: true });
+        });
       }}
       {...props}
     />

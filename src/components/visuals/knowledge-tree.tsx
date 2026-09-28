@@ -87,7 +87,7 @@ export function KnowledgeTree({ className }: { className?: string }) {
                 className={cn(
                   "flex max-w-[92px] items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-center text-[0.6875rem] leading-tight font-medium ring-1 shadow-[0_8px_20px_-14px_rgba(15,16,19,0.4)] sm:max-w-none sm:gap-2 sm:rounded-2xl sm:px-3.5 sm:py-2 sm:text-sm sm:whitespace-nowrap",
                   stateStyles[n.state],
-                  n.root && "bg-primary text-primary-foreground ring-primary",
+                  n.root && "max-w-none bg-primary whitespace-nowrap text-primary-foreground ring-primary",
                 )}
               >
                 <Dot state={n.state} />

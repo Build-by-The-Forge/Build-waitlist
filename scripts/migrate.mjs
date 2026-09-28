@@ -9,7 +9,7 @@ if (!url) {
   process.exit(1);
 }
 
-const sql = postgres(url, { max: 1 });
+const sql = postgres(url, { max: 1, onnotice: () => {} });
 const dir = join(process.cwd(), "db", "migrations");
 const files = (await readdir(dir)).filter((f) => f.endsWith(".sql")).sort();
 

@@ -1,0 +1,157 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------ */
+/* Design tokens. Components use these names, never raw colors.        */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-background: #f6f5f1;
+  --color-surface: #ffffff;
+  --color-surface-muted: #efede7;
+  --color-surface-elevated: #ffffff;
+
+  --color-foreground: #0f1013;
+  --color-foreground-muted: #45464d;
+  --color-foreground-subtle: #6a6b73;
+
+  --color-border: #dcd9d0;
+  --color-border-subtle: #e8e5de;
+
+  --color-primary: #0f1013;
+  --color-primary-foreground: #fafaf7;
+
+  /* Ember: BUILD's single accent. `accent` is for fills and large marks,
+     `accent-strong` for small text that needs AA contrast. */
+  --color-accent: #e8572a;
+  --color-accent-strong: #b93f14;
+  --color-accent-muted: #fbe6db;
+
+  /* Immersive (dark) sections */
+  --color-ink: #0b0c0f;
+  --color-ink-surface: #15171c;
+  --color-ink-border: #262932;
+  --color-ink-foreground: #f4f3ee;
+  --color-ink-muted: #a3a5ad;
+
+  --color-success: #1f7a4d;
+  --color-success-muted: #dff2e7;
+  --color-danger: #b42318;
+
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-float: float 9s ease-in-out infinite;
+  --animate-flow: flow 2.4s linear infinite;
+  --animate-pulse-soft: pulse-soft 3.2s ease-in-out infinite;
+  --animate-rise: rise 0.9s var(--ease-out-soft) both;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 16px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(0, -8px, 0);
+    }
+  }
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -16;
+    }
+  }
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.06);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Type scale: display, heading, body, small. Nothing else.            */
+/* ------------------------------------------------------------------ */
+@utility text-display {
+  font-size: clamp(3rem, 7vw, 7rem);
+  line-height: 0.95;
+  letter-spacing: -0.045em;
+  font-weight: 600;
+}
+
+@utility text-heading {
+  font-size: clamp(2.25rem, 5vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+}
+
+@utility text-body {
+  font-size: clamp(1rem, 0.94rem + 0.3vw, 1.25rem);
+  line-height: 1.55;
+}
+
+@utility text-small {
+  font-size: clamp(0.8125rem, 0.79rem + 0.1vw, 0.9375rem);
+  line-height: 1.5;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background: var(--color-accent-muted);
+    color: var(--color-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  [id] {
+    scroll-margin-top: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

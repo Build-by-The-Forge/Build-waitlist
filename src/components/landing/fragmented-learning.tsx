@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, type ReactNode } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
 import { Bot, FileQuestion, FileText, LayoutGrid, MessageCircle, NotebookPen, PlayCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
@@ -49,7 +49,7 @@ function Chip({ fragment }: { fragment: Fragment }) {
       <span className="text-foreground-subtle [&_svg]:size-4">{fragment.icon}</span>
       {fragment.label}
       {fragment.badge && (
-        <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-accent px-1.5 text-[0.625rem] font-semibold text-white ring-2 ring-background">
+        <span className="absolute -top-2 -right-2 grid h-5 min-w-5 place-items-center rounded-full bg-accent-strong px-1.5 text-[0.625rem] font-semibold text-white ring-2 ring-background">
           {fragment.badge}
         </span>
       )}
@@ -69,9 +69,9 @@ function FloatingFragment({ fragment, progress, index }: { fragment: Fragment; p
 
   return (
     <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${fragment.x}%`, top: `${fragment.y}%` }}>
-      <motion.div style={{ x, y, rotate, scale, opacity }}>
+      <m.div style={{ x, y, rotate, scale, opacity }}>
         <Chip fragment={fragment} />
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -86,7 +86,7 @@ function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
   return (
     <>
       <svg viewBox="0 0 100 100" className="absolute inset-0 size-full overflow-visible">
-        <motion.circle
+        <m.circle
           cx="50"
           cy="50"
           r={RING_RADIUS}
@@ -97,7 +97,7 @@ function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
           style={{ opacity: nodeOpacity }}
         />
         {ring.map((p, i) => (
-          <motion.path
+          <m.path
             key={i}
             d={`M50 50 L${p.x} ${p.y}`}
             stroke="var(--color-accent)"
@@ -109,13 +109,13 @@ function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
       </svg>
       {fragments.map((f, i) => (
         <div key={f.label} className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: `${ring[i].x}%`, top: `${ring[i].y}%` }}>
-          <motion.span
+          <m.span
             style={{ opacity: nodeOpacity, scale: nodeScale }}
             className="flex items-center gap-1.5 rounded-full bg-surface py-1.5 pr-3 pl-2 text-xs font-medium whitespace-nowrap ring-1 ring-border-subtle shadow-[0_8px_20px_-14px_rgba(15,16,19,0.4)]"
           >
             <span className="text-accent-strong [&_svg]:size-3.5">{f.icon}</span>
             {f.short}
-          </motion.span>
+          </m.span>
         </div>
       ))}
     </>
@@ -132,12 +132,12 @@ function BuildMark({ progress }: { progress: MotionValue<number> }) {
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-      <motion.span style={{ scale: pulse, opacity: pulseOpacity }} className="absolute -inset-8 rounded-[36px] ring-1 ring-accent" />
-      <motion.div style={{ opacity, scale }}>
+      <m.span style={{ scale: pulse, opacity: pulseOpacity }} className="absolute -inset-8 rounded-[36px] ring-1 ring-accent" />
+      <m.div style={{ opacity, scale }}>
         <span className="grid size-20 place-items-center rounded-[24px] bg-primary text-accent shadow-[0_30px_60px_-24px_rgba(15,16,19,0.6)] sm:size-24">
           <Spark className="size-8 sm:size-9" />
         </span>
-      </motion.div>
+      </m.div>
     </div>
   );
 }
@@ -146,9 +146,9 @@ function Resolution({ progress }: { progress: MotionValue<number> }) {
   const opacity = useScrollRange(progress, T.resolution, [0, 1]);
   const y = useScrollRange(progress, T.resolution, [16, 0]);
   return (
-    <motion.p style={{ opacity, y }} className="mt-6 text-body font-medium text-foreground">
+    <m.p style={{ opacity, y }} className="mt-6 text-body font-medium text-foreground">
       BUILD brings it together, and understands how it connects.
-    </motion.p>
+    </m.p>
   );
 }
 

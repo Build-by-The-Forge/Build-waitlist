@@ -68,7 +68,6 @@ function Connections({ layout, direction, className }: { layout: Record<NodeId, 
               strokeDasharray="3 13"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
-              className="animate-flow"
             />
           </g>
         );

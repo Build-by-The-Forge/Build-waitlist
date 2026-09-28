@@ -1,5 +1,5 @@
 import { Section } from "@/components/ui/container";
-import { Stagger, StaggerItem } from "@/components/motion/reveal";
+import { Reveal } from "@/components/motion/reveal";
 
 const capabilities = [
   { name: "Understand", line: "Understand your course context." },
@@ -22,22 +22,20 @@ export function MoreThanAChatbot() {
       }
       intro="A chatbot answers a question and forgets it. BUILD works inside your learning, so every answer leads somewhere."
     >
-      <Stagger
-        className="mt-16 grid gap-px overflow-hidden rounded-3xl bg-border-subtle ring-1 ring-border-subtle sm:grid-cols-2 lg:grid-cols-3"
-        gap={0.07}
-      >
+      <div className="mt-16 grid gap-px overflow-clip rounded-3xl bg-border-subtle ring-1 ring-border-subtle sm:grid-cols-2 lg:grid-cols-3">
         {capabilities.map((c, i) => (
           <div key={c.name} className="group bg-background p-8 sm:p-10">
-            <StaggerItem>
+            {/* Reveal the content, not the cell, so the grid lines never flash through. */}
+            <Reveal delay={(i % 3) * 0.1}>
               <p className="font-mono text-xs tracking-[0.14em] text-foreground-subtle">0{i + 1}</p>
               <h3 className="mt-4 text-[clamp(2rem,3.4vw,3rem)] leading-none font-semibold tracking-[-0.035em] transition-colors duration-300 group-hover:text-accent-strong">
                 {c.name}
               </h3>
               <p className="mt-4 text-body text-foreground-muted">{c.line}</p>
-            </StaggerItem>
+            </Reveal>
           </div>
         ))}
-      </Stagger>
+      </div>
     </Section>
   );
 }

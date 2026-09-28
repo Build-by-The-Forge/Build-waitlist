@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Container } from "@/components/ui/container";
 import { Spark } from "@/components/ui/logo";
 import { Reveal } from "@/components/motion/reveal";
@@ -13,13 +11,9 @@ const pillars = [
 
 function VisionDiagram() {
   return (
-    <motion.div aria-hidden="true" className="relative mx-auto aspect-[5/4] w-full max-w-3xl sm:aspect-[16/9]" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.5 }}>
-      {/* Top-down clip wipe; pathLength breaks under non-scaling strokes. */}
-      <motion.div
-        className="absolute inset-0"
-        aria-hidden="true"
-        variants={{ hidden: { clipPath: "inset(0 0 100% 0)" }, show: { clipPath: "inset(0 0 0% 0)", transition: { duration: 1.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] } } }}
-      >
+    <div aria-hidden="true" className="relative mx-auto aspect-[5/4] w-full max-w-3xl sm:aspect-[16/9]">
+      {/* Edges wipe in top-down as the diagram scrolls up (CSS scroll-driven). */}
+      <div className="wipe-down absolute inset-0">
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="size-full">
           {pillars.map((p) => (
             <g key={p.name}>
@@ -35,7 +29,7 @@ function VisionDiagram() {
             </g>
           ))}
         </svg>
-      </motion.div>
+      </div>
 
       <div className="absolute top-[14%] left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="relative">
@@ -47,35 +41,28 @@ function VisionDiagram() {
       </div>
 
       {pillars.map((p, i) => (
-        <motion.span
+        <span
           key={p.name}
-          className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-surface px-3 py-2 font-mono text-[0.6875rem] tracking-[0.14em] text-ink-foreground uppercase ring-1 ring-ink-border sm:px-4 sm:text-xs"
-          style={{ left: `${p.x}%` }}
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.5 }}
-          transition={{ delay: 0.7 + i * 0.12 }}
+          className="reveal-fade absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-ink-surface px-3 py-2 font-mono text-[0.6875rem] tracking-[0.14em] text-ink-foreground uppercase ring-1 ring-ink-border sm:px-4 sm:text-xs"
+          style={{ left: `${p.x}%`, "--i": i + 2 } as CSSProperties}
         >
           {p.name}
-        </motion.span>
+        </span>
       ))}
 
-      <motion.span
-        className="absolute top-[86%] left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-4 py-2 text-sm font-semibold whitespace-nowrap text-ink sm:px-5 sm:py-2.5"
-        initial={{ opacity: 0, scale: 0.9 }}
-        whileInView={{ opacity: 1, scale: 1 }}
-        viewport={{ once: true, amount: 0.5 }}
-        transition={{ delay: 1.5, type: "spring", stiffness: 140, damping: 16 }}
+      <span
+        className="reveal-scale absolute top-[86%] left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent px-4 py-2 text-sm font-semibold whitespace-nowrap text-ink sm:px-5 sm:py-2.5"
+        style={{ "--i": 3 } as CSSProperties}
       >
         Your future
-      </motion.span>
-    </motion.div>
+      </span>
+    </div>
   );
 }
 
 export function FutureLearning() {
   return (
-    <section id="about" aria-labelledby="about-heading" className="relative isolate overflow-hidden bg-ink py-28 text-ink-foreground sm:py-40">
+    <section id="about" aria-labelledby="about-heading" className="relative isolate overflow-clip bg-ink py-28 text-ink-foreground sm:py-40">
       {/* Fine grid + one soft ember glow: depth without decoration overload */}
       <div
         aria-hidden="true"

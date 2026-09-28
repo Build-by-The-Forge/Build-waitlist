@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, m } from "framer-motion";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -87,7 +87,7 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
     <div className={cn("w-full max-w-xl", className)}>
       <AnimatePresence mode="wait" initial={false}>
         {done ? (
-          <motion.div
+          <m.div
             key="done"
             role="status"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
@@ -113,9 +113,9 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
                 </>
               )}
             </div>
-          </motion.div>
+          </m.div>
         ) : (
-          <motion.form
+          <m.form
             key="form"
             exit={{ opacity: 0, y: -8 }}
             onSubmit={onSubmit}
@@ -171,7 +171,7 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
                 </>
               )}
             </Button>
-          </motion.form>
+          </m.form>
         )}
       </AnimatePresence>
       <p id={statusId} aria-live="polite" className={cn("mt-3 min-h-6 text-small", error ? "text-danger" : "text-foreground-subtle")}>

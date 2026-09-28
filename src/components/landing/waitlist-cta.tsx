@@ -6,7 +6,7 @@ import { WAITLIST_ANCHOR } from "@/lib/site";
 
 export function WaitlistCTA() {
   return (
-    <section id={WAITLIST_ANCHOR} aria-labelledby="join-heading" className="relative isolate overflow-hidden py-28 sm:py-40">
+    <section id={WAITLIST_ANCHOR} aria-labelledby="join-heading" className="relative isolate overflow-clip py-28 sm:py-40">
       <Spark className="pointer-events-none absolute top-1/2 left-1/2 -z-10 size-[min(90vw,720px)] -translate-x-1/2 -translate-y-1/2 text-surface-muted" />
       <Container className="flex flex-col items-center text-center">
         <Reveal className="flex flex-col items-center">

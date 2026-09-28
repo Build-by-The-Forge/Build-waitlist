@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -49,7 +49,7 @@ export function PracticeSession({ onStage }: { onStage?: (stage: number) => void
       <div className="relative mt-8 min-h-[380px]">
         <AnimatePresence mode="wait" initial={false}>
           {nextVisible ? (
-            <motion.div key="next" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
+            <m.div key="next" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <p className="text-xs font-medium text-foreground-subtle">Loops</p>
               <p className="mt-2 text-lg font-semibold tracking-tight sm:text-xl">How many times does a for-loop over range(5) run?</p>
               <div className="mt-6 grid gap-2">
@@ -59,9 +59,9 @@ export function PracticeSession({ onStage }: { onStage?: (stage: number) => void
                   </div>
                 ))}
               </div>
-            </motion.div>
+            </m.div>
           ) : (
-            <motion.div key="q" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
+            <m.div key="q" initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}>
               <p className="text-xs font-medium text-foreground-subtle">Recursion</p>
               <p className="mt-2 text-lg font-semibold tracking-tight sm:text-xl">Which part of a recursive function stops it from running forever?</p>
               <div className="mt-6 grid gap-2">
@@ -81,9 +81,9 @@ export function PracticeSession({ onStage }: { onStage?: (stage: number) => void
                         {o}
                       </span>
                       {evaluated && (
-                        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1 text-xs font-semibold text-success">
+                        <m.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="flex items-center gap-1 text-xs font-semibold text-success">
                           <Check className="size-3.5" /> Correct
-                        </motion.span>
+                        </m.span>
                       )}
                     </div>
                   );
@@ -91,7 +91,7 @@ export function PracticeSession({ onStage }: { onStage?: (stage: number) => void
               </div>
               <AnimatePresence>
                 {shown >= 3 && (
-                  <motion.div
+                  <m.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0 }}
@@ -105,10 +105,10 @@ export function PracticeSession({ onStage }: { onStage?: (stage: number) => void
                     <p className="mt-3 inline-flex items-center gap-1 text-xs font-medium">
                       Next question <ArrowRight className="size-3" />
                     </p>
-                  </motion.div>
+                  </m.div>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </m.div>
           )}
         </AnimatePresence>
       </div>

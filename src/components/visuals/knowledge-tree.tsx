@@ -1,6 +1,4 @@
-"use client";
-
-import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
 
 type State = "understood" | "progress" | "next" | "later";
@@ -50,13 +48,9 @@ function edgePath(a: TreeNode, b: TreeNode, link?: boolean) {
 export function KnowledgeTree({ className }: { className?: string }) {
   return (
     <div className={cn("relative", className)}>
-      <motion.div className="relative aspect-[4/3] w-full sm:aspect-[16/10]" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }}>
-        {/* Edges grow top-down with a clip wipe (pathLength breaks under non-scaling strokes). */}
-        <motion.div
-          className="absolute inset-0"
-          aria-hidden="true"
-          variants={{ hidden: { clipPath: "inset(0 0 100% 0)" }, show: { clipPath: "inset(0 0 0% 0)", transition: { duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] } } }}
-        >
+      <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]">
+        {/* Edges grow top-down as the map scrolls in (CSS scroll-driven clip wipe). */}
+        <div className="wipe-down absolute inset-0" aria-hidden="true">
           <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="size-full">
             {edges.map((e) => (
               <path
@@ -70,18 +64,14 @@ export function KnowledgeTree({ className }: { className?: string }) {
               />
             ))}
           </svg>
-        </motion.div>
+        </div>
 
         <ul aria-label="Data Science knowledge tree">
           {nodes.map((n, i) => (
-            <motion.li
+            <li
               key={n.id}
-              className="absolute -translate-x-1/2 -translate-y-1/2"
-              style={{ left: `${n.x}%`, top: `${n.y}%` }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ type: "spring", stiffness: 140, damping: 18, delay: i * 0.1 }}
+              className="reveal-scale absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${n.x}%`, top: `${n.y}%`, "--i": i } as CSSProperties}
             >
               <span
                 className={cn(
@@ -97,21 +87,18 @@ export function KnowledgeTree({ className }: { className?: string }) {
                   ({n.state === "understood" ? "understood" : n.state === "progress" ? "in progress" : n.state === "next" ? "up next" : "later"})
                 </span>
               </span>
-            </motion.li>
+            </li>
           ))}
         </ul>
 
-        <motion.span
-          className="absolute top-[70%] left-[66%] hidden -translate-x-1/2 rounded-full bg-accent-muted px-2.5 py-1 text-xs font-medium text-accent-strong sm:block"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 1.4 }}
+        <span
+          className="reveal-fade absolute top-[70%] left-[66%] hidden -translate-x-1/2 rounded-full bg-accent-muted px-2.5 py-1 text-xs font-medium text-accent-strong sm:block"
+          style={{ "--i": 6 } as CSSProperties}
           aria-hidden="true"
         >
           Statistics powers ML
-        </motion.span>
-      </motion.div>
+        </span>
+      </div>
 
       <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-small text-foreground-muted" aria-label="Legend">
         <li className="flex items-center gap-2">

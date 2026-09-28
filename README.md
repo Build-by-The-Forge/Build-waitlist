@@ -61,10 +61,10 @@ Tokens live in `src/app/globals.css` (`@theme`): surfaces, foregrounds, borders,
 
 ### Motion
 
-- One vocabulary: fade-up, scale, stagger (`components/motion/reveal.tsx`), plus scroll-linked stories in the problem and journey sections.
-- `MotionConfig reducedMotion="user"`, a global CSS reduced-motion rule, and explicit static fallbacks for the scroll stories.
-- **Use `useScrollRange` for any scroll-linked value.** Framer Motion runs simple scroll transforms on the browser's native ScrollTimeline, where partial keyframe ranges wrap instead of clamping.
-- Don't start an in-view animation from a fully clipped element: it never intersects, so `whileInView` never fires. Observe a parent and pass the animation down through variants.
+- **Entering content is CSS, not JS.** `Reveal`, `Stagger`, and the `draw-*`, `wipe-down`, `grow-bar`, `dim-in`, and `rail-fill` classes use CSS scroll-driven animations (`animation-timeline: view()`, defined in `globals.css`). They cost no hydration, respect reduced motion, and fall back to static content where unsupported. An `overflow: hidden` ancestor is a scroll container and captures `view()`, so use `overflow-clip` on anything that hosts reveals.
+- **Framer Motion (`m.*` under `LazyMotion strict`) is only for real interactivity:** the fragmented-learning scroll story, the AI demo, the practice session, the waitlist form, and the navbar menu.
+- **Use `useScrollRange` for any Framer scroll-linked value.** Framer runs simple scroll transforms on the browser's native ScrollTimeline, where partial keyframe ranges wrap instead of clamping.
+- **Avoid non-compositable infinite animations** (for example `stroke-dashoffset`). They restyle every frame. `OffscreenAnimationPauser` pauses looping CSS animations while they're off-screen.
 
 ### Product mockups
 

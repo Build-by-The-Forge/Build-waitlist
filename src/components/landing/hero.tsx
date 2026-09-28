@@ -21,7 +21,7 @@ export function Hero() {
       <Container className="flex flex-col items-center text-center">
         <Badge className="animate-rise">The future of learning</Badge>
 
-        <h1 id="hero-heading" className="mt-7 max-w-6xl text-display text-balance animate-rise">
+        <h1 id="hero-heading" className="mt-7 max-w-6xl text-display text-balance">
           Your learning journey,{" "}
           <span className="font-serif font-normal tracking-[-0.02em] italic">intelligently connected.</span>
         </h1>

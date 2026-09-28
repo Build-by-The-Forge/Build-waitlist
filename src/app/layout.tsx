@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { MotionProvider } from "@/components/motion/motion-provider";
 import { PageView } from "@/components/analytics/page-view";
+import { OffscreenAnimationPauser } from "@/components/motion/offscreen-animation-pauser";
 import { site } from "@/lib/site";
 import "./globals.css";
 
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body>
         <MotionProvider>{children}</MotionProvider>
         <PageView />
+        <OffscreenAnimationPauser />
       </body>
     </html>
   );

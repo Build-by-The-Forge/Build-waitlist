@@ -1,57 +1,38 @@
-"use client";
-
-import { motion, type HTMLMotionProps, type Variants } from "framer-motion";
+import type { CSSProperties, HTMLAttributes } from "react";
+import { cn } from "@/lib/utils";
 
 /**
- * The site's whole motion vocabulary: fade-up, scale, stagger.
- * Reduced motion is handled globally by <MotionConfig reducedMotion="user">,
- * which drops transform animations and keeps opacity.
+ * The site's motion vocabulary for entering content: fade-up, scale, stagger.
+ *
+ * These are plain server components. The animation is CSS scroll-driven
+ * (`animation-timeline: view()`, see globals.css), so reveals cost no
+ * JavaScript or hydration, respect prefers-reduced-motion, and degrade to
+ * static content where unsupported.
  */
-export const spring = { type: "spring", stiffness: 90, damping: 20, mass: 0.9 } as const;
-export const viewport = { once: true, margin: "0px 0px -12% 0px" } as const;
-
-export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: spring },
+type RevealProps = HTMLAttributes<HTMLDivElement> & {
+  variant?: "fadeUp" | "scale" | "fade";
+  /** Offsets this element's reveal slightly later, in stagger steps. */
+  delay?: number;
 };
 
-export const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.96 },
-  show: { opacity: 1, scale: 1, transition: spring },
-};
+const variantClass = { fadeUp: "reveal", scale: "reveal-scale", fade: "reveal-fade" } as const;
 
-type RevealProps = HTMLMotionProps<"div"> & { variant?: "fadeUp" | "scale"; delay?: number };
-
-export function Reveal({ variant = "fadeUp", delay = 0, children, ...props }: RevealProps) {
-  const variants: Variants =
-    variant === "scale"
-      ? { hidden: scaleIn.hidden, show: { opacity: 1, scale: 1, transition: { ...spring, delay } } }
-      : { hidden: fadeUp.hidden, show: { opacity: 1, y: 0, transition: { ...spring, delay } } };
+export function Reveal({ variant = "fadeUp", delay = 0, className, style, ...props }: RevealProps) {
   return (
-    <motion.div initial="hidden" whileInView="show" viewport={viewport} variants={variants} {...props}>
-      {children}
-    </motion.div>
-  );
-}
-
-export function Stagger({ gap = 0.08, children, ...props }: HTMLMotionProps<"div"> & { gap?: number }) {
-  return (
-    <motion.div
-      initial="hidden"
-      whileInView="show"
-      viewport={viewport}
-      variants={{ hidden: {}, show: { transition: { staggerChildren: gap } } }}
+    <div
+      className={cn(variantClass[variant], className)}
+      style={delay ? ({ "--i": delay * 10, ...style } as CSSProperties) : style}
       {...props}
-    >
-      {children}
-    </motion.div>
+    />
   );
 }
 
-export function StaggerItem({ variant = "fadeUp", children, ...props }: HTMLMotionProps<"div"> & { variant?: "fadeUp" | "scale" }) {
-  return (
-    <motion.div variants={variant === "scale" ? scaleIn : fadeUp} {...props}>
-      {children}
-    </motion.div>
-  );
+/** Children reveal one after another as the row scrolls in. */
+export function Stagger({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("reveal-stagger", className)} {...props} />;
+}
+
+/** A child of <Stagger>; kept as a named component for readability at call sites. */
+export function StaggerItem(props: HTMLAttributes<HTMLDivElement>) {
+  return <div {...props} />;
 }

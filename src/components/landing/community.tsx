@@ -75,7 +75,7 @@ function Feed() {
 
 export function Community() {
   return (
-    <section id="community" aria-labelledby="community-heading" className="overflow-hidden py-24 sm:py-32">
+    <section id="community" aria-labelledby="community-heading" className="overflow-clip py-24 sm:py-32">
       <Container className="grid items-center gap-14 lg:grid-cols-2 lg:gap-20">
         <div>
           <Reveal>

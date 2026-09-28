@@ -23,7 +23,7 @@ export function ProductWindow({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-[22px] bg-surface ring-1 ring-border shadow-[0_2px_4px_rgba(15,16,19,0.04),0_32px_64px_-32px_rgba(15,16,19,0.28)]",
+        "overflow-clip rounded-[22px] bg-surface ring-1 ring-border shadow-[0_2px_4px_rgba(15,16,19,0.04),0_32px_64px_-32px_rgba(15,16,19,0.28)]",
         className,
       )}
     >

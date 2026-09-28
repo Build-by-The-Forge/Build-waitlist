@@ -165,7 +165,7 @@ export function BuildExperience() {
       heading="Everything you need to keep learning."
       intro="Five parts of BUILD, designed as one continuous journey. Each flows into the next, so nothing you learn gets lost between apps."
     >
-      <Stagger className="mt-16 grid gap-4 md:grid-cols-2" gap={0.1}>
+      <Stagger className="mt-16 grid gap-4 md:grid-cols-2">
         <StepCard step="01" name="Explore" line="Discover what matters.">
           <ExploreVisual />
         </StepCard>

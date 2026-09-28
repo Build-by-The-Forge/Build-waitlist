@@ -1,8 +1,6 @@
-"use client";
-
-import { motion } from "framer-motion";
+import type { CSSProperties } from "react";
 import { Container } from "@/components/ui/container";
-import { Reveal, viewport } from "@/components/motion/reveal";
+import { Reveal } from "@/components/motion/reveal";
 import { cn } from "@/lib/utils";
 
 const TOTAL = 20;
@@ -33,14 +31,13 @@ export function Motivation() {
             <p className="text-small text-foreground-subtle">Your learning progress</p>
             <div className="mt-5 flex gap-1 sm:gap-1.5" role="img" aria-label={`${FILLED} of ${TOTAL} milestones reached`}>
               {Array.from({ length: TOTAL }, (_, i) => (
-                <motion.span
+                <span
                   key={i}
-                  className={cn("h-8 flex-1 rounded-[4px] sm:h-10", i < FILLED ? "bg-foreground" : "bg-surface-muted")}
-                  initial={{ opacity: 0, scaleY: 0.3 }}
-                  whileInView={{ opacity: 1, scaleY: 1 }}
-                  viewport={viewport}
-                  transition={{ delay: 0.2 + i * 0.035, type: "spring", stiffness: 200, damping: 20 }}
-                  style={i === FILLED - 1 ? { backgroundColor: "var(--color-accent)" } : undefined}
+                  className={cn(
+                    "grow-bar h-8 flex-1 rounded-[4px] sm:h-10",
+                    i === FILLED - 1 ? "bg-accent" : i < FILLED ? "bg-foreground" : "bg-surface-muted",
+                  )}
+                  style={{ "--i": i } as CSSProperties}
                 />
               ))}
             </div>

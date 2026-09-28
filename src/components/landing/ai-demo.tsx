@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
+import { AnimatePresence, m, useInView, useReducedMotion } from "framer-motion";
 import { ArrowUp, BookOpen, Check, FileText, NotebookPen, RotateCcw, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,7 +43,7 @@ function Thinking() {
   return (
     <div className="flex items-center gap-1.5 px-1 py-2" aria-label="BUILD is thinking">
       {[0, 1, 2].map((i) => (
-        <motion.span
+        <m.span
           key={i}
           className="size-1.5 rounded-full bg-foreground-subtle"
           animate={{ opacity: [0.3, 1, 0.3] }}
@@ -56,12 +56,12 @@ function Thinking() {
 
 function BuildBubble({ children }: { children: React.ReactNode }) {
   return (
-    <motion.div {...enter} className="flex gap-3">
+    <m.div {...enter} className="flex gap-3">
       <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-primary text-accent">
         <Spark className="size-3.5" />
       </span>
       <div className="min-w-0 flex-1">{children}</div>
-    </motion.div>
+    </m.div>
   );
 }
 
@@ -254,7 +254,7 @@ export function AiDemo() {
                   {showAnswer && (
                     <BuildBubble>
                       <Answer />
-                      <motion.div {...enter} transition={{ ...enter.transition, delay: reduceMotion ? 0 : 0.5 }} className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-accent-muted/60 p-4">
+                      <m.div {...enter} transition={{ ...enter.transition, delay: reduceMotion ? 0 : 0.5 }} className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-accent-muted/60 p-4">
                         <p className="font-medium">Want to practice this?</p>
                         {phase === "answered" && (
                           <span className="relative ml-auto">
@@ -265,7 +265,7 @@ export function AiDemo() {
                           </span>
                         )}
                         {phase === "generating" && <span className="ml-auto text-sm text-foreground-muted">Building a question from Week 6…</span>}
-                      </motion.div>
+                      </m.div>
                     </BuildBubble>
                   )}
 
@@ -309,7 +309,7 @@ export function AiDemo() {
                         </div>
                         <AnimatePresence>
                           {phase === "result" && (
-                            <motion.div {...enter} className="mt-4 border-t border-border-subtle pt-4 text-[0.9375rem]">
+                            <m.div {...enter} className="mt-4 border-t border-border-subtle pt-4 text-[0.9375rem]">
                               <p className={cn("font-semibold", choice === CORRECT ? "text-success" : "text-foreground")}>
                                 {choice === CORRECT ? "Correct." : "Not quite."}
                               </p>
@@ -319,7 +319,7 @@ export function AiDemo() {
                               <Button variant="secondary" size="sm" className="mt-4" onClick={replay}>
                                 <RotateCcw /> Replay demo
                               </Button>
-                            </motion.div>
+                            </m.div>
                           )}
                         </AnimatePresence>
                       </div>

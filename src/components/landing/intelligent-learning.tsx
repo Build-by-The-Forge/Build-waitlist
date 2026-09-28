@@ -1,10 +1,8 @@
-"use client";
-
-import { motion } from "framer-motion";
 import { BookMarked, Files, GitBranch, Lightbulb, ListChecks, ScanText, Waypoints } from "lucide-react";
 import { Section } from "@/components/ui/container";
 import { Spark } from "@/components/ui/logo";
-import { Reveal, Stagger, StaggerItem, viewport } from "@/components/motion/reveal";
+import { Reveal, Stagger, StaggerItem } from "@/components/motion/reveal";
+import { cn } from "@/lib/utils";
 
 // Technical pipeline (OCR → extraction → context), told as what it does for the student.
 const steps = [
@@ -20,17 +18,9 @@ const outcomes = [
   { icon: <GitBranch />, name: "Connect", detail: "See how today's topic links to what came before and what's next." },
 ];
 
+/** A rail that draws itself as it scrolls into view (CSS scroll-driven). */
 function DrawLine({ axis, className }: { axis: "x" | "y"; className: string }) {
-  return (
-    <motion.span
-      aria-hidden="true"
-      initial={axis === "x" ? { scaleX: 0 } : { scaleY: 0 }}
-      whileInView={axis === "x" ? { scaleX: 1 } : { scaleY: 1 }}
-      viewport={viewport}
-      transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
-      className={className}
-    />
-  );
+  return <span aria-hidden="true" className={cn(axis === "x" ? "draw-x" : "draw-y", className)} />;
 }
 
 export function IntelligentLearning() {
@@ -49,7 +39,7 @@ export function IntelligentLearning() {
           <span aria-hidden="true" className="absolute top-[8px] right-[calc(25%-1.625rem)] left-0 hidden h-px bg-border md:block" />
           <DrawLine axis="x" className="absolute top-[8px] right-[calc(25%-1.625rem)] left-0 hidden h-px origin-left bg-accent md:block" />
 
-          <Stagger className="relative grid gap-8 md:grid-cols-4 md:gap-6" gap={0.15}>
+          <Stagger className="relative grid gap-8 md:grid-cols-4 md:gap-6">
             {steps.map((step, i) => (
               <StaggerItem key={step.name} className="relative pl-9 md:pt-10 md:pl-0">
                 <span className="absolute top-0 left-0 grid size-[17px] place-items-center rounded-full bg-background ring-1 ring-foreground/30">
@@ -87,7 +77,7 @@ export function IntelligentLearning() {
           <span aria-hidden="true" className="hidden h-px w-2/3 bg-border md:block" />
         </div>
 
-        <Stagger className="grid gap-4 md:mt-4 md:grid-cols-3" gap={0.12}>
+        <Stagger className="grid gap-4 md:mt-4 md:grid-cols-3">
           {outcomes.map((o) => (
             <StaggerItem key={o.name} className="relative rounded-3xl bg-surface p-6 ring-1 ring-border-subtle sm:p-8">
               <span aria-hidden="true" className="absolute -top-px left-1/2 hidden h-4 w-px -translate-y-full bg-border md:block" />

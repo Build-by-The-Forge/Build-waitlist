@@ -43,7 +43,6 @@
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
 
   --animate-float: float 9s ease-in-out infinite;
-  --animate-flow: flow 2.4s linear infinite;
   --animate-pulse-soft: pulse-soft 3.2s ease-in-out infinite;
   --animate-rise: rise 0.9s var(--ease-out-soft) both;
 
@@ -65,11 +64,6 @@
     }
     50% {
       transform: translate3d(0, -8px, 0);
-    }
-  }
-  @keyframes flow {
-    to {
-      stroke-dashoffset: -16;
     }
   }
   @keyframes pulse-soft {
@@ -155,3 +149,120 @@
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Scroll reveals: CSS scroll-driven animations, zero JavaScript.      */
+/* Browsers without animation-timeline simply show the content.        */
+/* Note: an overflow:hidden ancestor is a scroll container and would   */
+/* capture view(); use overflow-clip on sections that host reveals.    */
+/* ------------------------------------------------------------------ */
+@keyframes reveal-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 28px, 0);
+  }
+}
+@keyframes reveal-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+@keyframes reveal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes draw-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes draw-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes wipe-down {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+}
+@keyframes grow-bar {
+  from {
+    opacity: 0;
+    transform: scaleY(0.3);
+  }
+}
+@keyframes dim-in {
+  from {
+    opacity: 0.5;
+    transform: translate3d(-12px, 0, 0);
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal,
+    .reveal-scale,
+    .reveal-fade,
+    .reveal-stagger > *,
+    .draw-x,
+    .draw-y,
+    .wipe-down,
+    .grow-bar {
+      animation-timing-function: var(--ease-out-soft);
+      animation-fill-mode: both;
+      animation-timeline: view();
+      /* --i staggers siblings; --step sets the spacing between them. */
+      animation-range: entry calc(var(--i, 0) * var(--step, 6%)) entry calc(70% + var(--i, 0) * var(--step, 6%));
+    }
+    .reveal,
+    .reveal-stagger > * {
+      animation-name: reveal-up;
+    }
+    .reveal-scale {
+      animation-name: reveal-scale;
+    }
+    .reveal-fade {
+      animation-name: reveal-fade;
+    }
+    .draw-x {
+      animation-name: draw-x;
+      animation-range: entry 40% cover 45%;
+    }
+    .draw-y {
+      animation-name: draw-y;
+      animation-range: entry 40% cover 45%;
+    }
+    .wipe-down {
+      animation-name: wipe-down;
+      animation-range: entry 50% cover 50%;
+    }
+    .grow-bar {
+      animation-name: grow-bar;
+      --step: 1.5%;
+    }
+    /* Journey stages: upcoming headings sit at 0.5 opacity (still 3:1 at
+       display size) and come up to full strength as they reach reading height. */
+    .dim-in {
+      animation: dim-in linear both;
+      animation-timeline: view();
+      animation-range: entry 20% cover 45%;
+    }
+    /* Journey rail fills as the list scrolls through the viewport. */
+    .rail-fill {
+      animation: draw-y linear both;
+      animation-timeline: --journey;
+      animation-range: entry 60% exit 40%;
+    }
+  }
+}
+
+.reveal-stagger > :nth-child(2) { --i: 1; }
+.reveal-stagger > :nth-child(3) { --i: 2; }
+.reveal-stagger > :nth-child(4) { --i: 3; }
+.reveal-stagger > :nth-child(5) { --i: 4; }
+.reveal-stagger > :nth-child(6) { --i: 5; }
+.reveal-stagger > :nth-child(7) { --i: 6; }
+.reveal-stagger > :nth-child(8) { --i: 7; }

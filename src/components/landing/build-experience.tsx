@@ -93,7 +93,7 @@ function HomeVisual() {
         <p className="text-xs text-foreground-subtle">This week</p>
         <div className="mt-3 flex h-14 items-end gap-1.5">
           {week.map((h, i) => (
-            <span key={i} className="flex-1 rounded-sm bg-foreground/80" style={{ height: `${Math.max(h * 100, 8)}%`, opacity: h ? 1 : 0.15 }} />
+            <span key={i} className={cn("flex-1 rounded-[3px]", i === 4 ? "bg-accent" : "bg-foreground/15")} style={{ height: `${Math.max(h * 100, 8)}%` }} />
           ))}
         </div>
       </div>

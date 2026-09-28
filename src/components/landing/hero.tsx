@@ -7,7 +7,7 @@ import { IntelligenceCanvas } from "@/components/visuals/intelligence-canvas";
 
 export function Hero() {
   return (
-    <section id="top" aria-labelledby="hero-heading" className="relative overflow-hidden pt-32 pb-20 sm:pt-40 sm:pb-28">
+    <section id="top" aria-labelledby="hero-heading" className="relative overflow-hidden pt-32 pb-6 sm:pt-40 sm:pb-10">
       {/* Faint dot field, fading out toward the edges */}
       <div
         aria-hidden="true"

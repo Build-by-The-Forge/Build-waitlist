@@ -51,23 +51,29 @@ export function KnowledgeTree({ className }: { className?: string }) {
   return (
     <div className={cn("relative", className)}>
       <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]">
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full" aria-hidden="true">
-          {edges.map((e, i) => (
-            <motion.path
+        {/* Edges grow top-down with a clip wipe (pathLength breaks under non-scaling strokes). */}
+        <motion.svg
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+          className="absolute inset-0 size-full"
+          aria-hidden="true"
+          initial={{ clipPath: "inset(0 0 100% 0)" }}
+          whileInView={{ clipPath: "inset(0 0 0% 0)" }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          {edges.map((e) => (
+            <path
               key={`${e.from}-${e.to}`}
               d={edgePath(byId[e.from], byId[e.to], e.link)}
               fill="none"
-              stroke={e.link ? "var(--color-accent)" : "var(--color-border)"}
+              stroke={e.link ? "var(--color-accent)" : "color-mix(in oklab, var(--color-foreground) 22%, transparent)"}
               strokeWidth={e.link ? 1.5 : 1.25}
               strokeDasharray={e.link ? "4 5" : undefined}
               vectorEffect="non-scaling-stroke"
-              initial={{ pathLength: 0, opacity: 0 }}
-              whileInView={{ pathLength: 1, opacity: 1 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: [0.22, 1, 0.36, 1] }}
             />
           ))}
-        </svg>
+        </motion.svg>
 
         <ul aria-label="Data Science knowledge tree">
           {nodes.map((n, i) => (

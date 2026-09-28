@@ -175,7 +175,7 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
         )}
       </AnimatePresence>
       <p id={statusId} aria-live="polite" className={cn("mt-3 min-h-6 text-small", error ? "text-danger" : "text-foreground-subtle")}>
-        {error ?? (done ? "" : "Email only. No spam, ever. Unsubscribe anytime.")}
+        {error ?? (done ? "" : "Email only. Unsubscribe anytime.")}
       </p>
     </div>
   );

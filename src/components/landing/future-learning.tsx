@@ -11,39 +11,33 @@ const pillars = [
   { name: "Community", x: 82 },
 ];
 
-const draw = (delay: number) => ({
-  initial: { pathLength: 0 },
-  whileInView: { pathLength: 1 },
-  viewport: { once: true, amount: 0.5 },
-  transition: { duration: 1.1, delay, ease: [0.22, 1, 0.36, 1] as const },
-});
-
 function VisionDiagram() {
   return (
     <div aria-hidden="true" className="relative mx-auto aspect-[5/4] w-full max-w-3xl sm:aspect-[16/9]">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full">
-        {pillars.map((p, i) => (
+      {/* Top-down clip wipe; pathLength breaks under non-scaling strokes. */}
+      <motion.svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className="absolute inset-0 size-full"
+        initial={{ clipPath: "inset(0 0 100% 0)" }}
+        whileInView={{ clipPath: "inset(0 0 0% 0)" }}
+        viewport={{ once: true, amount: 0.5 }}
+        transition={{ duration: 1.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+      >
+        {pillars.map((p) => (
           <g key={p.name}>
-            <motion.path
-              d={`M50 14 C50 32 ${p.x} 32 ${p.x} 50`}
-              fill="none"
-              stroke="var(--color-ink-border)"
-              strokeWidth={1.25}
-              vectorEffect="non-scaling-stroke"
-              {...draw(0.3 + i * 0.1)}
-            />
-            <motion.path
+            <path d={`M50 14 C50 32 ${p.x} 32 ${p.x} 50`} fill="none" stroke="#3a3e4a" strokeWidth={1.25} vectorEffect="non-scaling-stroke" />
+            <path
               d={`M${p.x} 50 C${p.x} 68 50 68 50 86`}
               fill="none"
               stroke="var(--color-accent)"
-              strokeOpacity={0.7}
+              strokeOpacity={0.75}
               strokeWidth={1.25}
               vectorEffect="non-scaling-stroke"
-              {...draw(0.9 + i * 0.1)}
             />
           </g>
         ))}
-      </svg>
+      </motion.svg>
 
       <div className="absolute top-[14%] left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="relative">

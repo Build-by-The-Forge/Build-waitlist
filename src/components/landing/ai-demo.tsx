@@ -159,7 +159,7 @@ export function AiDemo() {
     <section id="demo" aria-labelledby="demo-heading" className="bg-surface-muted/60 py-24 sm:py-32">
       <Container>
         <Reveal className="flex flex-col items-start justify-between gap-8 lg:flex-row lg:items-end">
-          <div className="max-w-2xl">
+          <div className="max-w-3xl">
             <Badge>See it in action</Badge>
             <h2 id="demo-heading" className="mt-5 text-heading text-balance">
               Ask about your course. Then practice it.
@@ -252,9 +252,12 @@ export function AiDemo() {
                       <motion.div {...enter} transition={{ ...enter.transition, delay: reduceMotion ? 0 : 0.5 }} className="mt-5 flex flex-wrap items-center gap-3 rounded-2xl bg-accent-muted/60 p-4">
                         <p className="font-medium">Want to practice this?</p>
                         {phase === "answered" && (
-                          <Button size="sm" onClick={() => setPhase("generating")} className="ml-auto">
-                            <Spark className="text-accent" /> Generate practice
-                          </Button>
+                          <span className="relative ml-auto">
+                            <span aria-hidden="true" className="absolute inset-0 animate-ping rounded-full bg-accent/40 [animation-duration:2s]" />
+                            <Button size="sm" onClick={() => setPhase("generating")} className="relative">
+                              <Spark className="text-accent" /> Generate practice
+                            </Button>
+                          </span>
                         )}
                         {phase === "generating" && <span className="ml-auto text-sm text-foreground-muted">Building a question from Week 6…</span>}
                       </motion.div>

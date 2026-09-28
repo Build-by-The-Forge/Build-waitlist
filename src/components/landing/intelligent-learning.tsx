@@ -1,17 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GitBranch, Lightbulb, ListChecks } from "lucide-react";
+import { BookMarked, Files, GitBranch, Lightbulb, ListChecks, ScanText, Waypoints } from "lucide-react";
 import { Section } from "@/components/ui/container";
 import { Spark } from "@/components/ui/logo";
 import { Reveal, Stagger, StaggerItem, viewport } from "@/components/motion/reveal";
 
 // Technical pipeline (OCR → extraction → context), told as what it does for the student.
 const steps = [
-  { name: "Your materials", detail: "Lecture slides, PDFs, notes and past questions, all in one place." },
-  { name: "Read", detail: "BUILD reads the text in your slides, documents and scanned pages." },
-  { name: "Understand", detail: "It picks out the key concepts and how they relate to each other." },
-  { name: "Course context", detail: "Everything is mapped to your course, topic by topic." },
+  { icon: <Files />, name: "Your materials", detail: "Lecture slides, PDFs, notes and past questions, all in one place." },
+  { icon: <ScanText />, name: "Read", detail: "BUILD reads the text in your slides, documents and scanned pages." },
+  { icon: <Waypoints />, name: "Understand", detail: "It picks out the key concepts and how they relate to each other." },
+  { icon: <BookMarked />, name: "Course context", detail: "Everything is mapped to your course, topic by topic." },
 ];
 
 const outcomes = [
@@ -55,8 +55,11 @@ export function IntelligentLearning() {
                 <span className="absolute top-0 left-0 grid size-[17px] place-items-center rounded-full bg-background ring-1 ring-foreground/30">
                   <span className="size-[7px] rounded-full bg-accent" />
                 </span>
-                <p className="font-mono text-xs tracking-[0.14em] text-foreground-subtle">0{i + 1}</p>
-                <h3 className="mt-2 text-xl font-semibold tracking-tight">{step.name}</h3>
+                <div className="flex items-center gap-3">
+                  <span className="grid size-9 place-items-center rounded-xl bg-surface text-foreground ring-1 ring-border-subtle [&_svg]:size-4">{step.icon}</span>
+                  <span className="font-mono text-xs tracking-[0.14em] text-foreground-subtle">0{i + 1}</span>
+                </div>
+                <h3 className="mt-4 text-xl font-semibold tracking-tight">{step.name}</h3>
                 <p className="mt-2 text-small text-foreground-muted">{step.detail}</p>
               </StaggerItem>
             ))}

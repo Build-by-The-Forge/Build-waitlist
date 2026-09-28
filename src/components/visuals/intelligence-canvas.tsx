@@ -58,7 +58,7 @@ function Connections({ layout, direction, className }: { layout: Record<NodeId, 
         const d = curve(layout[from], layout[to], direction);
         return (
           <g key={`${from}-${to}`}>
-            <path d={d} fill="none" stroke="var(--color-border)" strokeWidth={1.25} vectorEffect="non-scaling-stroke" />
+            <path d={d} fill="none" stroke="color-mix(in oklab, var(--color-foreground) 16%, transparent)" strokeWidth={1.25} vectorEffect="non-scaling-stroke" />
             <path
               d={d}
               fill="none"

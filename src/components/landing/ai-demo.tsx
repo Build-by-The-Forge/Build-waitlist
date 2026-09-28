@@ -105,17 +105,22 @@ function Answer() {
 export function AiDemo() {
   const ref = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.35 });
+  const inView = useInView(ref, { amount: 0.35 });
   const reduceMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("idle");
   const [typed, setTyped] = useState(0);
   const [choice, setChoice] = useState<string | null>(null);
 
-  // Start the scripted conversation the first time the demo is visible.
+  // Start (and count a view) only once the demo has stayed on screen for a
+  // moment, so scrolling past it on the way to the form doesn't trigger it.
+  const started = useRef(false);
   useEffect(() => {
-    if (!inView) return;
-    track("product_demo_view", { demo: "ai_recursion" });
-    const t = setTimeout(() => setPhase("asking"), 500);
+    if (!inView || started.current) return;
+    const t = setTimeout(() => {
+      started.current = true;
+      track("product_demo_view", { demo: "ai_recursion" });
+      setPhase("asking");
+    }, 900);
     return () => clearTimeout(t);
   }, [inView]);
 

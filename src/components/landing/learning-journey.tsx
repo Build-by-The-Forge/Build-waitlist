@@ -1,10 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useReducedMotion, useScroll, useTransform, type MotionValue } from "framer-motion";
+import { motion, useReducedMotion, useScroll, type MotionValue } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { Reveal } from "@/components/motion/reveal";
+import { useScrollRange } from "@/components/motion/use-scroll-range";
 
 const stages = [
   { name: "Discover", line: "Find the topic you need, right where it lives in your course." },
@@ -18,8 +19,9 @@ const stages = [
 function Stage({ stage, index, progress, still }: { stage: (typeof stages)[number]; index: number; progress: MotionValue<number>; still: boolean }) {
   const step = 1 / stages.length;
   const start = index * step;
-  const opacity = useTransform(progress, [start - step * 0.6, start + step * 0.2], [0.18, 1]);
-  const x = useTransform(progress, [start - step * 0.6, start + step * 0.2], [-12, 0]);
+  const range = [start - step * 0.6, start + step * 0.2] as const;
+  const opacity = useScrollRange(progress, range, [0.18, 1]);
+  const x = useScrollRange(progress, range, [-12, 0]);
 
   return (
     <motion.li style={still ? undefined : { opacity, x }} className="relative grid gap-2 py-7 pl-10 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] sm:items-baseline sm:gap-10 sm:pl-16">
@@ -38,7 +40,7 @@ export function LearningJourney() {
   const ref = useRef<HTMLOListElement>(null);
   const still = useReducedMotion() ?? false;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 75%", "end 55%"] });
-  const fill = useTransform(scrollYProgress, [0, 1], [0, 1]);
+  const fill = useScrollRange(scrollYProgress, [0, 1], [0, 1]);
 
   return (
     <section id="journey" aria-labelledby="journey-heading" className="py-24 sm:py-40">

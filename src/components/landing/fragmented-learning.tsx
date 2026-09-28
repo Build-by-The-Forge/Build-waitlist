@@ -6,6 +6,7 @@ import { Bot, FileQuestion, FileText, LayoutGrid, MessageCircle, NotebookPen, Pl
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
 import { Spark } from "@/components/ui/logo";
+import { useScrollRange } from "@/components/motion/use-scroll-range";
 
 type Fragment = { label: string; short: string; icon: ReactNode; x: number; y: number; rotate: number; badge?: string };
 
@@ -59,7 +60,7 @@ function Chip({ fragment }: { fragment: Fragment }) {
 function FloatingFragment({ fragment, progress, index }: { fragment: Fragment; progress: MotionValue<number>; index: number }) {
   // Staggered convergence: each fragment starts pulling in slightly after the previous one.
   const start = T.converge[0] + index * 0.025;
-  const t = useTransform(progress, [start, start + T.converge[1]], [0, 1], { clamp: true });
+  const t = useScrollRange(progress, [start, start + T.converge[1]], [0, 1]);
   const x = useTransform(t, (v) => `${(50 - fragment.x) * v * v}cqw`);
   const y = useTransform(t, (v) => `${(50 - fragment.y) * v * v}cqw`);
   const rotate = useTransform(t, [0, 1], [fragment.rotate, 0]);
@@ -78,9 +79,9 @@ function FloatingFragment({ fragment, progress, index }: { fragment: Fragment; p
 /** The payoff: the same sources, now connected through BUILD. */
 function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
   const draw = useTransform(progress, [...T.spokes], [0, 1]);
-  const lineOpacity = useTransform(progress, [T.spokes[0], T.spokes[0] + 0.02], [0, 1]);
-  const nodeOpacity = useTransform(progress, [...T.nodes], [0, 1]);
-  const nodeScale = useTransform(progress, [...T.nodes], [0.85, 1]);
+  const lineOpacity = useScrollRange(progress, [T.spokes[0], T.spokes[0] + 0.02], [0, 1]);
+  const nodeOpacity = useScrollRange(progress, T.nodes, [0, 1]);
+  const nodeScale = useScrollRange(progress, T.nodes, [0.85, 1]);
 
   return (
     <>
@@ -123,10 +124,11 @@ function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
 
 function BuildMark({ progress }: { progress: MotionValue<number> }) {
   const [from, to] = T.mark;
-  const opacity = useTransform(progress, [from, from + (to - from) * 0.8], [0, 1]);
-  const scale = useTransform(progress, [from, to], [0.6, 1]);
-  const pulse = useTransform(progress, [from + 0.04, to + 0.12], [0.8, 1.5]);
-  const pulseOpacity = useTransform(progress, [from + 0.04, to, to + 0.12], [0, 0.5, 0]);
+  const opacity = useScrollRange(progress, [from, from + (to - from) * 0.8], [0, 1]);
+  const scale = useScrollRange(progress, [from, to], [0.6, 1]);
+  const pulse = useScrollRange(progress, [from + 0.04, to + 0.12], [0.8, 1.5]);
+  // Full 0 → 1 keyframes for the same reason as useScrollRange.
+  const pulseOpacity = useTransform(progress, [0, from + 0.04, to, to + 0.12, 1], [0, 0, 0.5, 0, 0]);
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -141,8 +143,8 @@ function BuildMark({ progress }: { progress: MotionValue<number> }) {
 }
 
 function Resolution({ progress }: { progress: MotionValue<number> }) {
-  const opacity = useTransform(progress, [...T.resolution], [0, 1]);
-  const y = useTransform(progress, [...T.resolution], [16, 0]);
+  const opacity = useScrollRange(progress, T.resolution, [0, 1]);
+  const y = useScrollRange(progress, T.resolution, [16, 0]);
   return (
     <motion.p style={{ opacity, y }} className="mt-6 text-body font-medium text-foreground">
       BUILD brings it together, and understands how it connects.

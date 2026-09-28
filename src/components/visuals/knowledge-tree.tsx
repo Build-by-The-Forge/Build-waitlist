@@ -50,30 +50,27 @@ function edgePath(a: TreeNode, b: TreeNode, link?: boolean) {
 export function KnowledgeTree({ className }: { className?: string }) {
   return (
     <div className={cn("relative", className)}>
-      <div className="relative aspect-[4/3] w-full sm:aspect-[16/10]">
+      <motion.div className="relative aspect-[4/3] w-full sm:aspect-[16/10]" initial="hidden" whileInView="show" viewport={{ once: true, amount: 0.4 }}>
         {/* Edges grow top-down with a clip wipe (pathLength breaks under non-scaling strokes). */}
-        <motion.svg
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-          className="absolute inset-0 size-full"
+        <motion.div
+          className="absolute inset-0"
           aria-hidden="true"
-          initial={{ clipPath: "inset(0 0 100% 0)" }}
-          whileInView={{ clipPath: "inset(0 0 0% 0)" }}
-          viewport={{ once: true, amount: 0.4 }}
-          transition={{ duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          variants={{ hidden: { clipPath: "inset(0 0 100% 0)" }, show: { clipPath: "inset(0 0 0% 0)", transition: { duration: 1.4, delay: 0.2, ease: [0.22, 1, 0.36, 1] } } }}
         >
-          {edges.map((e) => (
-            <path
-              key={`${e.from}-${e.to}`}
-              d={edgePath(byId[e.from], byId[e.to], e.link)}
-              fill="none"
-              stroke={e.link ? "var(--color-accent)" : "color-mix(in oklab, var(--color-foreground) 22%, transparent)"}
-              strokeWidth={e.link ? 1.5 : 1.25}
-              strokeDasharray={e.link ? "4 5" : undefined}
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        </motion.svg>
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="size-full">
+            {edges.map((e) => (
+              <path
+                key={`${e.from}-${e.to}`}
+                d={edgePath(byId[e.from], byId[e.to], e.link)}
+                fill="none"
+                stroke={e.link ? "var(--color-accent)" : "color-mix(in oklab, var(--color-foreground) 22%, transparent)"}
+                strokeWidth={e.link ? 1.5 : 1.25}
+                strokeDasharray={e.link ? "4 5" : undefined}
+                vectorEffect="non-scaling-stroke"
+              />
+            ))}
+          </svg>
+        </motion.div>
 
         <ul aria-label="Data Science knowledge tree">
           {nodes.map((n, i) => (
@@ -114,7 +111,7 @@ export function KnowledgeTree({ className }: { className?: string }) {
         >
           Statistics powers ML
         </motion.span>
-      </div>
+      </motion.div>
 
       <ul className="mt-6 flex flex-wrap gap-x-5 gap-y-2 text-small text-foreground-muted" aria-label="Legend">
         <li className="flex items-center gap-2">

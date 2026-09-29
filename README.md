@@ -32,6 +32,11 @@ Without `DATABASE_URL`, development signups are written to `.data/waitlist.json`
 | `NEXT_PUBLIC_SITE_URL` | Production | Canonical URL for metadata, sitemap, and the API's origin check |
 | `DATABASE_URL` | Production | Postgres connection string. The API returns 500 in production without it rather than drop signups |
 | `WAITLIST_ALLOWED_ORIGINS` | No | Extra comma-separated origins allowed to POST (e.g. preview deploys) |
+| `AUTH_SECRET` | Admin | Signs admin sessions. Generate with `npx auth secret` |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Admin | Google OAuth client for admin sign-in |
+| `ADMIN_BOOTSTRAP_EMAIL` | Admin (first run) | The one Google account allowed to become the first admin, only while `waitlist.admin_users` is empty |
+| `AUTH_TRUST_HOST` | Self-hosting | Set to `true` behind your own proxy or host (not needed on Vercel) |
+| `ADMIN_TIMEZONE` | No | Time zone for dashboard dates (default `Africa/Lagos`) |
 
 ## Page structure
 
@@ -78,6 +83,47 @@ All product UI is illustrative, built from `ProductWindow`. The AI demo is scrip
 - **Normalization:** lowercased; Gmail dots and `+tags` collapsed. `UNIQUE(email_normalized)` in the database is the source of truth, so concurrent duplicates can't race.
 - **Abuse controls:** Origin check (same host or allow-list), per-IP rate limit (5/min, 20/hour), honeypot field, and a minimum time-to-submit. Bots get a fake success.
 - The rate limiter is **in-memory per instance**. On serverless or multi-instance hosting, add a platform or edge rate limit, or back it with Redis or Postgres.
+- **Source:** which Join button led to the signup (`hero`, `navbar`, `mobile_menu`), else `final_cta`.
+- Data lives in the `waitlist` schema, separate from BUILD platform tables. `db/roles.sql` creates a least-privilege `waitlist_app` role for `DATABASE_URL`.
+
+## Admin dashboard
+
+`/admin/waitlist` shows totals, sources, a searchable and paginated list, and a CSV export. Sign in at `/admin/login`.
+
+**Access model:** Google sign-in proves identity; it never grants access by itself. Only an **active** row in `waitlist.admin_users` does, matched by Google's stable account id (`sub`), not by email. There is no signup page. v1 allows exactly **one active admin**, enforced by a database index. Every admin page and API re-checks status in the database, so disabling an admin ends their session immediately. Sign-ins, refusals, and exports are written to `waitlist.admin_audit`.
+
+**Admin API** (all require an active admin; 401 otherwise):
+
+| Endpoint | Returns |
+| --- | --- |
+| `GET /api/admin/waitlist?q=&page=` | Paginated, searchable signups |
+| `GET /api/admin/waitlist/stats` | Totals and counts by source |
+| `GET /api/admin/waitlist/export` | CSV (audited; formula-like cells neutralized) |
+
+### First-time setup
+
+1. In Google Cloud Console, go to **APIs & Services → Credentials → Create OAuth client ID** (Web application). Add the authorized redirect URI `https://<your-domain>/api/auth/callback/google` (and `http://localhost:3000/api/auth/callback/google` for local use).
+2. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `ADMIN_BOOTSTRAP_EMAIL` to your own Google address.
+3. Run `npm run db:migrate`, deploy, open `/admin/login`, and continue with that Google account. You become the admin. After that, `ADMIN_BOOTSTRAP_EMAIL` is ignored.
+
+### Managing the admin (database owner)
+
+Admins are changed deliberately in SQL, never by signing in:
+
+```sql
+-- Replace the admin: disable the current one, then provision the new email.
+-- The new person becomes admin on their first Google sign-in with that address.
+UPDATE waitlist.admin_users SET status = 'disabled' WHERE status = 'active';
+INSERT INTO waitlist.admin_users (email) VALUES ('new.admin@gmail.com');
+
+-- Temporarily revoke access (takes effect on their next request):
+UPDATE waitlist.admin_users SET status = 'disabled' WHERE email = 'someone@gmail.com';
+
+-- Review recent admin activity:
+SELECT a.created_at, u.email, a.action, a.detail
+FROM waitlist.admin_audit a LEFT JOIN waitlist.admin_users u ON u.id = a.admin_id
+ORDER BY a.created_at DESC LIMIT 50;
+```
 
 ## Analytics
 
@@ -85,7 +131,8 @@ All product UI is illustrative, built from `ProductWindow`. The AI demo is scrip
 
 ## Deploying
 
-1. Provision Postgres and set `DATABASE_URL`, then run `npm run db:migrate`.
+1. Provision Postgres. Run `npm run db:migrate` as the owner, then create the app role with `db/roles.sql` and point `DATABASE_URL` at it.
 2. Set `NEXT_PUBLIC_SITE_URL` to the production origin.
-3. Add an analytics script in `src/app/layout.tsx` once a provider is chosen.
-4. Have the privacy and terms pages (`/privacy`, `/terms`) reviewed before launch.
+3. Configure admin sign-in (see [First-time setup](#first-time-setup)) and bootstrap your admin account.
+4. Add an analytics script in `src/app/layout.tsx` once a provider is chosen.
+5. Have the privacy and terms pages (`/privacy`, `/terms`) reviewed before launch.

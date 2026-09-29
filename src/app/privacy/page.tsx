@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         <p>When you join the BUILD waitlist, we store:</p>
         <ul>
           <li>your email address;</li>
-          <li>which signup form you used on this page;</li>
+          <li>which button on this page led you to sign up (for example, the top of the page or the menu);</li>
           <li>the date and time you signed up.</li>
         </ul>
         <p className="mt-3">We don&rsquo;t ask for your name, school, or any other personal details for the waitlist.</p>

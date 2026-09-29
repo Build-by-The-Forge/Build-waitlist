@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { Container } from "@/components/ui/container";
-import { Spark } from "@/components/ui/logo";
+import { BuildMark } from "@/components/ui/logo";
 import { Reveal } from "@/components/motion/reveal";
 
 const pillars = [
@@ -33,9 +33,9 @@ function VisionDiagram() {
 
       <div className="absolute top-[14%] left-1/2 -translate-x-1/2 -translate-y-1/2">
         <div className="relative">
-          <span className="absolute -inset-6 animate-pulse-soft rounded-full bg-accent/20 blur-xl" />
-          <span className="relative grid size-14 place-items-center rounded-2xl bg-ink-foreground text-accent sm:size-16">
-            <Spark className="size-6 sm:size-7" />
+          <span className="absolute -inset-6 animate-pulse-soft rounded-full bg-brand-indigo/30 blur-xl" />
+          <span className="relative grid size-14 place-items-center rounded-2xl bg-ink-foreground sm:size-16">
+            <BuildMark height={36} alt="BUILD" className="h-8 w-auto sm:h-9" />
           </span>
         </div>
       </div>

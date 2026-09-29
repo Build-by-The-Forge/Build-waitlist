@@ -1,5 +1,5 @@
 import { Container } from "@/components/ui/container";
-import { Spark } from "@/components/ui/logo";
+import { BuildMarkSilhouette } from "@/components/ui/logo";
 import { Reveal } from "@/components/motion/reveal";
 import { WaitlistForm } from "@/components/landing/waitlist-form";
 import { WAITLIST_ANCHOR } from "@/lib/site";
@@ -7,7 +7,7 @@ import { WAITLIST_ANCHOR } from "@/lib/site";
 export function WaitlistCTA() {
   return (
     <section id={WAITLIST_ANCHOR} aria-labelledby="join-heading" className="relative isolate overflow-clip py-28 sm:py-40">
-      <Spark className="pointer-events-none absolute top-1/2 left-1/2 -z-10 size-[min(90vw,720px)] -translate-x-1/2 -translate-y-1/2 text-surface-muted" />
+      <BuildMarkSilhouette className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[min(95vw,640px)] -translate-x-1/2 -translate-y-1/2 text-surface-muted" />
       <Container className="flex flex-col items-center text-center">
         <Reveal className="flex flex-col items-center">
           <p className="inline-flex items-center gap-2 rounded-full bg-surface px-3.5 py-1.5 text-small text-foreground-muted ring-1 ring-border-subtle">

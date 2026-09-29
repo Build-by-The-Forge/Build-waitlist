@@ -5,7 +5,7 @@ import { m, useReducedMotion, useScroll, useTransform, type MotionValue } from "
 import { Bot, FileQuestion, FileText, LayoutGrid, MessageCircle, NotebookPen, PlayCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Container } from "@/components/ui/container";
-import { Spark } from "@/components/ui/logo";
+import { BuildMark } from "@/components/ui/logo";
 import { useScrollRange } from "@/components/motion/use-scroll-range";
 
 type Fragment = { label: string; short: string; icon: ReactNode; x: number; y: number; rotate: number; badge?: string };
@@ -122,7 +122,8 @@ function ConnectedRing({ progress }: { progress: MotionValue<number> }) {
   );
 }
 
-function BuildMark({ progress }: { progress: MotionValue<number> }) {
+/** The BUILD logo the fragments collapse into. */
+function CollapseMark({ progress }: { progress: MotionValue<number> }) {
   const [from, to] = T.mark;
   const opacity = useScrollRange(progress, [from, from + (to - from) * 0.8], [0, 1]);
   const scale = useScrollRange(progress, [from, to], [0.6, 1]);
@@ -132,10 +133,10 @@ function BuildMark({ progress }: { progress: MotionValue<number> }) {
 
   return (
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-      <m.span style={{ scale: pulse, opacity: pulseOpacity }} className="absolute -inset-8 rounded-[36px] ring-1 ring-accent" />
+      <m.span style={{ scale: pulse, opacity: pulseOpacity }} className="absolute -inset-8 rounded-[36px] ring-1 ring-brand-indigo" />
       <m.div style={{ opacity, scale }}>
-        <span className="grid size-20 place-items-center rounded-[24px] bg-primary text-accent shadow-[0_30px_60px_-24px_rgba(15,16,19,0.6)] sm:size-24">
-          <Spark className="size-8 sm:size-9" />
+        <span className="grid size-20 place-items-center rounded-[24px] bg-surface ring-1 ring-border-subtle shadow-[0_30px_60px_-24px_rgba(67,83,240,0.55)] sm:size-24">
+          <BuildMark height={52} alt="BUILD" className="h-11 w-auto sm:h-[52px]" />
         </span>
       </m.div>
     </div>
@@ -185,8 +186,8 @@ export function FragmentedLearning() {
                 </li>
               ))}
             </ul>
-            <span className="grid size-20 place-items-center rounded-3xl bg-primary text-accent">
-              <Spark className="size-8" />
+            <span className="grid size-20 place-items-center rounded-3xl bg-surface ring-1 ring-border-subtle">
+              <BuildMark height={44} alt="BUILD" />
             </span>
           </div>
         </Container>
@@ -210,7 +211,7 @@ export function FragmentedLearning() {
             {fragments.map((f, i) => (
               <FloatingFragment key={f.label} fragment={f} progress={scrollYProgress} index={i} />
             ))}
-            <BuildMark progress={scrollYProgress} />
+            <CollapseMark progress={scrollYProgress} />
           </div>
         </Container>
       </div>

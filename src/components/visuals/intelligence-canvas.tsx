@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { BookOpen, ListChecks, Route, TrendingUp } from "lucide-react";
-import { Spark } from "@/components/ui/logo";
+import { BuildMark, Spark } from "@/components/ui/logo";
 import { cn } from "@/lib/utils";
 
 /**
@@ -120,8 +120,8 @@ export function IntelligenceCanvas({ className }: { className?: string }) {
       <Connections layout={wide} direction="x" className="hidden md:block" />
 
       <Positioned id="build" delay={0.1}>
-        <div className="grid size-12 place-items-center rounded-2xl bg-primary text-accent shadow-[0_16px_32px_-12px_rgba(15,16,19,0.55)] sm:size-14">
-          <Spark className="size-5 sm:size-6" />
+        <div className="grid size-12 place-items-center rounded-2xl bg-surface ring-1 ring-border-subtle shadow-[0_16px_32px_-14px_rgba(67,83,240,0.45)] sm:size-14">
+          <BuildMark height={30} alt="BUILD" className="h-[26px] w-auto sm:h-[30px]" />
         </div>
       </Positioned>
 

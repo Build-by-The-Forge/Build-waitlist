@@ -62,7 +62,7 @@ const toneStyles = {
 
 export default async function VerifiedPage({ searchParams }: Props) {
   const raw = (await searchParams).status;
-  const key = typeof raw === "string" && raw in views ? raw : "invalid";
+  const key = typeof raw === "string" && Object.hasOwn(views, raw) ? raw : "invalid";
   const view = views[key];
   const { ring, Icon } = toneStyles[view.tone];
 

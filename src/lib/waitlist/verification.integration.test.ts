@@ -19,7 +19,9 @@ const tokenFrom = (text: string) => new URL(text.match(/https:\/\/build\.test\S+
 const row = async (email: string) =>
   (await sql`SELECT * FROM waitlist.signups WHERE email_normalized = ${email}`)[0] as Record<string, unknown> | undefined;
 
-describe.skipIf(!url)("email verification (Postgres)", () => {
+// Generous timeout: against a remote database (e.g. Supabase) each test makes
+// many round trips, and the daily-cap test alone runs eight signups.
+describe.skipIf(!url)("email verification (Postgres)", { timeout: 30_000 }, () => {
   let email: ReturnType<typeof memoryProvider>;
   let deps: VerificationDeps;
   let n = 0;

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Check, Clock, X } from "lucide-react";
+import { VerificationEvent } from "@/components/analytics/verification-event";
 import { buttonClasses } from "@/components/ui/button";
 import { Logo } from "@/components/ui/logo";
 import { WAITLIST_ANCHOR } from "@/lib/site";
@@ -61,11 +62,13 @@ const toneStyles = {
 
 export default async function VerifiedPage({ searchParams }: Props) {
   const raw = (await searchParams).status;
-  const view = views[typeof raw === "string" ? raw : ""] ?? views.invalid;
+  const key = typeof raw === "string" && raw in views ? raw : "invalid";
+  const view = views[key];
   const { ring, Icon } = toneStyles[view.tone];
 
   return (
     <main id="main" className="grid min-h-svh place-items-center px-4 py-16">
+      <VerificationEvent status={key} />
       <div className="w-full max-w-md text-center">
         <Link href="/" aria-label="BUILD home" className="inline-flex rounded-lg">
           <Logo />

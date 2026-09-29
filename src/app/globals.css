@@ -25,6 +25,13 @@
   --color-accent-strong: #b93f14;
   --color-accent-muted: #fbe6db;
 
+  /* Brand logo colours (from the BUILD logo). The mark carries the gradient;
+     brand-ink is the wordmark navy. */
+  --color-brand-blue: #1f7bff;
+  --color-brand-indigo: #4353f0;
+  --color-brand-violet: #6a3be6;
+  --color-brand-ink: #10163a;
+
   /* Immersive (dark) sections */
   --color-ink: #0b0c0f;
   --color-ink-surface: #15171c;

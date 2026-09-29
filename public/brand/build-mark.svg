@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92 108" role="img" aria-label="BUILD">
+  <defs>
+    <linearGradient id="build-mark-g" x1="0.85" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#1F7BFF"/>
+      <stop offset="0.55" stop-color="#4353F0"/>
+      <stop offset="1" stop-color="#6A3BE6"/>
+    </linearGradient>
+    <mask id="build-mark-m" maskUnits="userSpaceOnUse" x="0" y="0" width="92" height="108">
+      <rect width="92" height="108" fill="#fff"/>
+      <!-- graduation cap -->
+      <path d="M20 23.5 46 13l26 10.5-26 10.5z" fill="#000"/>
+      <path d="M31 29.5v8.2c0 3.6 6.7 6.8 15 6.8s15-3.2 15-6.8v-8.2L46 35.6z" fill="#000"/>
+      <path d="M67.2 25.4v9.2" stroke="#000" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="65.6" y="33.6" width="3.2" height="5.4" rx="1.6" fill="#000"/>
+      <!-- rising bars -->
+      <path d="M23 92.5 32 88v21h-9z" fill="#000"/>
+      <path d="M37 80.5 46 76v33h-9z" fill="#000"/>
+      <path d="M51 67.5 60 63v46h-9z" fill="#000"/>
+      <path d="M65 54.5 74 50v59h-9z" fill="#000"/>
+    </mask>
+  </defs>
+  <path mask="url(#build-mark-m)" fill="url(#build-mark-g)" d="M9 0h43c17.7 0 30 10.6 30 25.6 0 9.8-5 16.8-11.8 20.4C83.4 49.8 92 60.4 92 75.2 92 94.5 77.5 108 57 108H9c-5 0-9-4-9-9V9c0-5 4-9 9-9z"/>
+</svg>

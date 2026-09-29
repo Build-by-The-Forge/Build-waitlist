@@ -146,6 +146,8 @@ async function sendVerification(row: SignupRow, deps: VerificationDeps): Promise
       verifyUrl: verificationUrl(deps.siteUrl, token),
       siteUrl: deps.siteUrl,
       ttlHours: ttl,
+      // Lets local development point the logo at a deployed copy of the site.
+      assetBaseUrl: process.env.EMAIL_ASSET_BASE_URL || undefined,
     }),
     tag: MESSAGE_TYPE,
   };

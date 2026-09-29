@@ -5,7 +5,39 @@ export type WaitlistVerificationInput = {
   verifyUrl: string;
   siteUrl: string;
   ttlHours: number;
+  /** Public origin hosting /brand/build-mark-email.png. Defaults to siteUrl. */
+  assetBaseUrl?: string;
 };
+
+/**
+ * Email clients fetch images through their own servers (Gmail's image proxy),
+ * which can't reach localhost or private networks. For those origins the
+ * logo image is replaced by an HTML-only badge instead of a broken image.
+ */
+export function isPubliclyReachable(origin: string): boolean {
+  let host: string;
+  try {
+    host = new URL(origin).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+  if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host === "[::1]" || host === "0.0.0.0") return false;
+  const ip = host.match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
+  if (ip) {
+    const [a, b] = [Number(ip[1]), Number(ip[2])];
+    if (a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254)) return false;
+  }
+  return true;
+}
+
+/** Header mark: the hosted PNG when reachable, otherwise a text badge in brand indigo. */
+function markHtml(assetBase: string): string {
+  if (isPubliclyReachable(assetBase)) {
+    const src = escapeHtml(`${assetBase.replace(/\/$/, "")}/brand/build-mark-email.png`);
+    return `<img src="${src}" width="24" height="28" alt="" style="display:inline-block;width:24px;height:28px;border:0;vertical-align:middle;">`;
+  }
+  return `<span style="display:inline-block;width:26px;height:28px;line-height:28px;border-radius:7px;background:#4353f0;color:#ffffff;text-align:center;font-size:16px;font-weight:800;vertical-align:middle;">B</span>`;
+}
 
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
@@ -22,7 +54,7 @@ function expiryPhrase(hours: number) {
  * Table layout with inline styles because that's what email clients render
  * consistently (no external CSS, no web fonts required).
  */
-export function waitlistVerificationEmail({ to, verifyUrl, siteUrl, ttlHours }: WaitlistVerificationInput): EmailMessage {
+export function waitlistVerificationEmail({ to, verifyUrl, siteUrl, ttlHours, assetBaseUrl }: WaitlistVerificationInput): EmailMessage {
   const url = escapeHtml(verifyUrl);
   const site = escapeHtml(siteUrl);
   const siteHost = escapeHtml(new URL(siteUrl).host);
@@ -44,7 +76,7 @@ export function waitlistVerificationEmail({ to, verifyUrl, siteUrl, ttlHours }: 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
         <tr>
           <td style="padding:0 8px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-            <img src="${site}/brand/build-mark-email.png" width="24" height="28" alt="" style="display:inline-block;width:24px;height:28px;border:0;vertical-align:middle;">
+            ${markHtml(assetBaseUrl || siteUrl)}
             <span style="font-size:17px;font-weight:700;letter-spacing:2px;color:#10163a;vertical-align:middle;padding-left:8px;">BUILD</span>
           </td>
         </tr>

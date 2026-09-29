@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { waitlistVerificationEmail } from "./waitlist-verification";
+import { isPubliclyReachable, waitlistVerificationEmail } from "./waitlist-verification";
 
 const input = {
   to: "ada@example.com",
@@ -7,6 +7,33 @@ const input = {
   siteUrl: "https://build.example",
   ttlHours: 24,
 };
+
+describe("logo in the email header", () => {
+  it("uses the hosted PNG for a public site", () => {
+    expect(waitlistVerificationEmail(input).html).toContain('src="https://build.example/brand/build-mark-email.png"');
+  });
+
+  it.each(["http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.1.4:3000", "http://10.0.0.2", "http://mybox.local"])(
+    "falls back to an HTML badge for unreachable %s (no broken image)",
+    (siteUrl) => {
+      const { html } = waitlistVerificationEmail({ ...input, siteUrl, verifyUrl: `${siteUrl}/api/waitlist/verify?token=x` });
+      expect(html).not.toContain("build-mark-email.png");
+      expect(html).toContain("background:#4353f0");
+    },
+  );
+
+  it("EMAIL_ASSET_BASE_URL-style override lets a local site use a hosted logo", () => {
+    const { html } = waitlistVerificationEmail({ ...input, siteUrl: "http://localhost:3000", assetBaseUrl: "https://build-waitlist.vercel.app/" });
+    expect(html).toContain('src="https://build-waitlist.vercel.app/brand/build-mark-email.png"');
+  });
+
+  it("classifies origins", () => {
+    expect(isPubliclyReachable("https://build.example")).toBe(true);
+    expect(isPubliclyReachable("http://172.20.0.1")).toBe(false);
+    expect(isPubliclyReachable("http://172.32.0.1")).toBe(true);
+    expect(isPubliclyReachable("not a url")).toBe(false);
+  });
+});
 
 describe("waitlistVerificationEmail", () => {
   it("has a subject and both html and text bodies", () => {

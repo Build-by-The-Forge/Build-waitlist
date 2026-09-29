@@ -32,8 +32,10 @@ Signups need Postgres, because email verification relies on it. Point `DATABASE_
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Production | Canonical URL for metadata, sitemap, and the API's origin check |
 | `DATABASE_URL` | Yes | Postgres connection string. Without it the API returns 500 rather than drop signups |
-| `EMAIL_PROVIDER` | Production | `resend` in production; unset or `console` in development (links go to the server log) |
-| `EMAIL_API_KEY` / `EMAIL_FROM` | Production | Resend API key, and a sender on a domain verified in Resend |
+| `EMAIL_PROVIDER` | Production | Primary provider: `brevo` in production; unset or `console` in development (links go to the server log) |
+| `BREVO_API_KEY` / `RESEND_API_KEY` | Production | Provider keys. With `EMAIL_PROVIDER=brevo`, setting `RESEND_API_KEY` enables Resend as the fallback |
+| `EMAIL_FROM` / `EMAIL_FROM_NAME` | Production | Sender address on a domain verified in both providers, and display name (`BUILD`) |
+| `EMAIL_FALLBACK_PROVIDER` | No | Override the fallback (`resend` or `brevo`) or disable it (`none`) |
 | `EMAIL_REPLY_TO` | Recommended | A monitored inbox for replies, such as deletion requests (the privacy page tells people to reply) |
 | `VERIFICATION_TOKEN_TTL_HOURS` / `VERIFICATION_RESEND_COOLDOWN_SECONDS` / `VERIFICATION_MAX_SENDS_PER_DAY` | No | Defaults: 24, 60, 5 |
 | `WAITLIST_ALLOWED_ORIGINS` | No | Extra comma-separated origins allowed to POST (e.g. preview deploys) |
@@ -100,8 +102,48 @@ POST /api/waitlist ─► pending row + email (button and link) ─► GET /api/
 - **Sending limits:** 60-second cooldown and 5 emails per address per 24 hours, enforced atomically in the database; throttled requests look identical to sent ones. A failed delivery keeps the pending row and lifts the cooldown.
 - **Abuse controls:** Origin check (same host or allow-list), honeypot field, minimum time-to-submit (bots get a fake success), and per-IP limits (signup 5/min and 20/hour; resend 3/min and 10/hour plus 3/hour per address; verify 20/min). Limits live in `waitlist.rate_limits` under salted hashes, so they hold across Vercel's serverless instances and no raw IPs are stored.
 - **Source:** which Join button led to the signup (`hero`, `navbar`, `mobile_menu`), else `final_cta`.
-- **Email provider:** `lib/email` defines a small `EmailProvider` interface. Resend is implemented over its HTTP API; swap in Postmark, SES, and others by adding a provider there.
+- **Email delivery:** see [Email architecture](#email-architecture). The waitlist code only knows it needs to send a verification email, not who delivers it.
 - Data lives in the `waitlist` schema, separate from BUILD platform tables. `db/roles.sql` creates a least-privilege `waitlist_app` role for `DATABASE_URL`.
+
+## Email architecture
+
+```text
+verification service ─► email router ─► Brevo (primary) ──────────────► inbox
+                                        └─ transient failure ─► Resend (fallback) ─► inbox
+```
+
+- **Brevo carries all normal traffic; Resend is only for resilience.** This is not round-robin. Brevo's free-tier branding in emails is accepted for BUILD's current stage.
+- `lib/email/` holds `brevo.ts` and `resend.ts` (plain HTTP adapters, no SDKs), `router.ts`, `classify.ts`, and a provider-independent template, so both providers send identical copy. Every adapter returns a classified result and never throws.
+- **When the fallback is used.** Only when Brevo *provably didn't accept* the message: connection refused, DNS failure, connect timeout, HTTP 429, 500/502/503, or `not_enough_credits` (the daily quota is exhausted).
+- **When it isn't:**
+  - *Unknown* outcomes (our 10-second timeout, a reset mid-request, 504) might already be delivered, so the router doesn't try Resend. The person still sees "check your inbox"; if nothing arrives, the resend button works after the 60-second cooldown.
+  - *Permanent* rejections (400/422, such as a bad recipient) would fail on Resend too. The person can retry immediately.
+  - *Configuration* errors (401/403, missing key, unverified sender, unrecognized IP) are logged and not masked.
+- **Duplicates.** Each claimed verification link is one logical email with a UUID. Resend receives it as an `Idempotency-Key`, so Resend deduplicates retries for 24 hours. Brevo has no idempotency support; the id goes in an `X-BUILD-Message-Id` header for tracing only. Not falling back after an unknown outcome is what keeps cross-provider duplicates rare. Exactly-once delivery isn't possible with Brevo, but a duplicate needs an ambiguous Brevo failure *and* a manual resend, and even then both links point to the same signup.
+- **Tracking.** Every attempt goes into `waitlist.email_deliveries` (provider, sent/failed, failure class, provider message id; never tokens, URLs or content), along with one structured log line per attempt (`event: email_attempt`, `provider`, `result`, `failure_class`, `fallback`).
+
+  ```sql
+  -- How often is the fallback needed?
+  SELECT provider, status, failure_class, count(*) FROM waitlist.email_deliveries
+  WHERE created_at > now() - interval '7 days' GROUP BY 1, 2, 3 ORDER BY 4 DESC;
+  ```
+
+- **What never changes:** the public API never reveals which provider was used or whether a fallback happened. Rate limits, cooldowns, anti-enumeration, and token rules are enforced before any provider is called. Delivery never marks anyone verified; only clicking the link does.
+
+### Testing real delivery
+
+1. **Brevo:** create an account and a transactional API key. Add and verify a sender (or your domain) under *Senders, Domains & Dedicated IPs*. Under *Security → Authorised IPs*, deactivate IP blocking: Vercel's IPs change, so blocking would reject every send. Set `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `EMAIL_FROM` and `EMAIL_FROM_NAME=BUILD` in `.env.local`. Sign up with a real inbox, then check that the email arrives and that both the button and the raw link verify. Try resend too, and confirm there's still one row.
+2. **Resend fallback:** add `RESEND_API_KEY`, then make Brevo fail *transiently* for a local run only. The easiest way is to point Brevo at an unreachable host by blocking `api.brevo.com` in your hosts file (`127.0.0.1 api.brevo.com`), which gives `ECONNREFUSED`, a transient failure. Sign up again: the email should arrive via Resend, logs should show `"fallback":"resend"`, and `email_deliveries` should hold a failed Brevo row and a sent Resend row. Remove the hosts entry afterwards.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+| --- | --- |
+| `email_failed` on every signup, log says `BREVO_API_KEY is missing` | Key not set in this environment (on Vercel, check the environment scope) |
+| Brevo `unauthorized` | Wrong key, or *Authorised IPs* is blocking the server's IP |
+| Brevo `permission_denied` / `account_under_validation` | Sender or domain not verified, or the Brevo account still under review |
+| Brevo `not_enough_credits`, emails arriving via Resend | Daily free quota used up; the fallback is doing its job |
+| Resend 403 `validation_error` | Sending domain not verified in Resend |
 
 ## Admin dashboard
 
@@ -150,18 +192,18 @@ ORDER BY a.created_at DESC LIMIT 50;
 
 1. Provision Postgres. Run `npm run db:migrate` as the owner, then create the app role with `db/roles.sql` and point `DATABASE_URL` at it.
 2. Set `NEXT_PUBLIC_SITE_URL` to the production origin. It's baked in at build time and used for verification links.
-3. Set up email (see below) and set `EMAIL_PROVIDER=resend`, `EMAIL_API_KEY`, `EMAIL_FROM` and `EMAIL_REPLY_TO`.
+3. Set up email (see below) and set `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME` and `EMAIL_REPLY_TO`.
 4. Configure admin sign-in (see [First-time setup](#first-time-setup)) and bootstrap your admin account.
 5. Add an analytics script in `src/app/layout.tsx` once a provider is chosen.
 6. Have the privacy and terms pages (`/privacy`, `/terms`) reviewed before launch.
 
 ### Vercel
 
-Add these as encrypted environment variables, and keep Production and Preview/Development credentials separate: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_BOOTSTRAP_EMAIL`, `EMAIL_PROVIDER`, `EMAIL_API_KEY`, `EMAIL_FROM`, `EMAIL_REPLY_TO`. Add the production Google OAuth redirect URI `https://<production-domain>/api/auth/callback/google`. Don't reuse local callback URLs. All verification state and rate limits live in Postgres, so nothing depends on instance memory or the filesystem.
+Add these as encrypted environment variables, and keep Production and Preview/Development credentials separate: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_BOOTSTRAP_EMAIL`, `EMAIL_PROVIDER`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO`. None of these may use the `NEXT_PUBLIC_` prefix. Add the production Google OAuth redirect URI `https://<production-domain>/api/auth/callback/google`. Don't reuse local callback URLs. All verification state and rate limits live in Postgres, so nothing depends on instance memory or the filesystem.
 
 ### Email deliverability
 
-Send from a BUILD domain or subdomain you control (for example `hello@mail.<domain>`), never a personal Gmail address. In Resend, add the domain and publish the DNS records it gives you: **SPF** and **DKIM** (required), plus a **DMARC** record (start with `v=DMARC1; p=none; rua=mailto:<you>`). Send a test signup to a Gmail and an Outlook inbox before launch.
+Send from a BUILD domain or subdomain you control (for example `hello@mail.<domain>`), never a personal Gmail address or a provider's test sender. Use the **same sending identity in both providers**, so fallback emails look identical. In **Brevo** (*Senders, Domains & Dedicated IPs → Domains*) and in **Resend** (*Domains*), add the domain and publish the DNS records each gives you: **SPF** and **DKIM** for each, plus one **DMARC** record for the domain (start with `v=DMARC1; p=none; rua=mailto:<you>`). SPF allows only one TXT record per name, so combine both providers' `include:` entries into a single record. Send a test signup to a Gmail and an Outlook inbox before launch.
 
 ### Production cutover
 

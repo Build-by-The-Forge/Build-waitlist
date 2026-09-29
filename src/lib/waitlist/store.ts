@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import postgres from "postgres";
+import type postgres from "postgres";
+import { getSql } from "@/lib/db";
 
 export type SignupInput = { email: string; emailNormalized: string; source: string | null };
 export type SignupResult = "created" | "duplicate";
@@ -53,9 +54,9 @@ let store: WaitlistStore | undefined;
 
 export function getWaitlistStore(): WaitlistStore {
   if (store) return store;
-  const url = process.env.DATABASE_URL;
-  if (url) {
-    store = new PostgresStore(postgres(url, { max: 5, idle_timeout: 20, connect_timeout: 10 }));
+  const sql = getSql();
+  if (sql) {
+    store = new PostgresStore(sql);
   } else if (process.env.NODE_ENV !== "production") {
     store = new FileStore();
   } else {

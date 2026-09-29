@@ -20,9 +20,12 @@ export async function GET() {
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        controller.enqueue(encoder.encode(csvRow(["email", "source", "joined_at"])));
+        // Verification token fields are never selected, so they can't reach the export.
+        controller.enqueue(encoder.encode(csvRow(["email", "source", "joined_at", "verification_status", "verified_at"])));
         for await (const batch of allSignups()) {
-          controller.enqueue(encoder.encode(batch.map((s) => csvRow([s.email, s.source, s.createdAt])).join("")));
+          controller.enqueue(
+            encoder.encode(batch.map((s) => csvRow([s.email, s.source, s.createdAt, s.verificationStatus, s.verifiedAt])).join("")),
+          );
           rows += batch.length;
         }
         await audit(admin.id, "export_csv", { rows });

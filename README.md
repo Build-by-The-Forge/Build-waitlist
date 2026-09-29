@@ -228,6 +228,7 @@ ORDER BY a.created_at DESC LIMIT 50;
 | `WAITLIST_ALLOWED_ORIGINS`, `EMAIL_ASSET_BASE_URL`, `ADMIN_TIMEZONE`, `RATE_LIMIT_SALT`, `VERIFICATION_*` | optional | optional | optional (defaults are fine) |
 
 **Known limitations for the first `*.vercel.app` deployment:**
+
 - *Resend fallback requires an authenticated sending domain and will be completed when BUILD owns a custom domain.* Routing is built and tested; with a Gmail `EMAIL_FROM`, Resend rejects the sender (`403 validation_error`, logged as a configuration failure).
 - The Gmail sender works through Brevo only because Brevo rewrites it to a `brevosend.com` address. That hurts deliverability (more spam-folder risk). Move to a domain sender when available.
 - Admin login works only on the production URL, and on any preview URL whose callback you explicitly add to Google.

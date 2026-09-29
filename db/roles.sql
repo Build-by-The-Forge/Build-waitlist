@@ -26,6 +26,10 @@ GRANT SELECT, INSERT ON waitlist.admin_users TO waitlist_app;
 GRANT UPDATE (provider_subject, last_login_at) ON waitlist.admin_users TO waitlist_app;
 GRANT USAGE ON SEQUENCE waitlist.admin_users_id_seq TO waitlist_app;
 
+-- Email delivery attempts are append-only for the app.
+GRANT SELECT, INSERT ON waitlist.email_deliveries TO waitlist_app;
+GRANT USAGE ON SEQUENCE waitlist.email_deliveries_id_seq TO waitlist_app;
+
 -- Shared rate-limit counters (hashed buckets only).
 GRANT SELECT, INSERT, UPDATE, DELETE ON waitlist.rate_limits TO waitlist_app;
 

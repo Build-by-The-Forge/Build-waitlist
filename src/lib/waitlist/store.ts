@@ -15,7 +15,7 @@ class PostgresStore implements WaitlistStore {
   async add({ email, emailNormalized, source }: SignupInput): Promise<SignupResult> {
     // The UNIQUE constraint is the source of truth, so there is no read-then-write race.
     const rows = await this.sql`
-      INSERT INTO waitlist_signups (email, email_normalized, source)
+      INSERT INTO waitlist.signups (email, email_normalized, source)
       VALUES (${email}, ${emailNormalized}, ${source})
       ON CONFLICT (email_normalized) DO NOTHING
       RETURNING id

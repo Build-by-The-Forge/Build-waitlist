@@ -51,6 +51,11 @@ export async function POST(req: NextRequest) {
   const limited = rateLimit(clientKey(req));
   if (!limited.ok) return reply("rate_limited", 429, { "Retry-After": String(limited.retryAfterSeconds) });
 
+  // Refuse oversized bodies up front when the client declares a length, and
+  // re-check after reading in case it didn't (or lied).
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > MAX_BODY_BYTES) return reply("invalid", 413);
+
   const text = await req.text();
   if (text.length > MAX_BODY_BYTES) return reply("invalid", 413);
 

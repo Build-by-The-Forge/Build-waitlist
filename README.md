@@ -71,6 +71,14 @@ src/
 
 Tokens live in `src/app/globals.css` (`@theme`): surfaces, foregrounds, borders, a single ember accent (`accent` for fills, `accent-strong` for small text at AA contrast), and an `ink` palette for the dark vision section. The type scale is four utilities: `text-display`, `text-heading`, `text-body`, and `text-small`. Fonts: Geist (UI), Instrument Serif italic (emphasis), and Geist Mono (labels).
 
+### Brand
+
+- **Logo:** `public/brand/build-mark.svg` is the vector mark (gradient "B" with a graduation cap and rising bars), redrawn from the supplied logo (`public/brand/build-logo-original.jpg`, kept as the reference). `build-mark-email.png` is a 4× raster for email clients, which block SVG. The favicon (`src/app/icon.svg`), Apple icon and Open Graph image derive from the same mark.
+- **Components:** `Logo` (mark plus "BUILD" wordmark in `brand-ink`), `BuildMark` (the mark alone), and `BuildMarkSilhouette` (single-colour, for watermarks). Use the mark wherever the page stands for BUILD itself.
+- **The spark ✦** now means only *BUILD's intelligence* (the BUILD AI pill and the AI chat avatar), never the brand.
+- **Colour tokens:** `brand-blue` `#1f7bff`, `brand-indigo` `#4353f0`, `brand-violet` `#6a3be6` (the mark's gradient) and `brand-ink` `#10163a` (the wordmark).
+- **Clear space and minimums:** keep at least half the mark's width clear around it; don't render it below 16 px tall. Don't recolour, rotate or stretch it; for one-colour contexts use `BuildMarkSilhouette`.
+
 ### Motion
 
 - **Entering content is CSS, not JS.** `Reveal`, `Stagger`, and the `draw-*`, `wipe-down`, `grow-bar`, `dim-in`, and `rail-fill` classes use CSS scroll-driven animations (`animation-timeline: view()`, defined in `globals.css`). They cost no hydration, respect reduced motion, and fall back to static content where unsupported. An `overflow: hidden` ancestor is a scroll container and captures `view()`, so use `overflow-clip` on anything that hosts reveals.

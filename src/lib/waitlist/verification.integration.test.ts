@@ -7,12 +7,14 @@ import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { memoryProvider } from "@/lib/email/dev-providers";
 import { createEmailRouter } from "@/lib/email/router";
+import { connectionOptions } from "@/lib/db";
 import { createSharedRateLimiter } from "./shared-rate-limit";
 import { requestSignup, resendVerification, verifyToken, type VerificationDeps } from "./verification";
 import { hashToken } from "./verification-token";
 
 const url = process.env.TEST_DATABASE_URL;
-const sql = url ? postgres(url, { max: 4, onnotice: () => {} }) : (null as unknown as postgres.Sql);
+// Same connection settings as the app (e.g. no prepared statements on a transaction pooler).
+const sql = url ? postgres(url, { ...connectionOptions(url), max: 4 }) : (null as unknown as postgres.Sql);
 const SITE = "https://build.test";
 
 const tokenFrom = (text: string) => new URL(text.match(/https:\/\/build\.test\S+/)![0]).searchParams.get("token")!;

@@ -11,7 +11,7 @@ const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 
 function expiryPhrase(hours: number) {
-  return hours % 24 === 0 && hours >= 24 ? `${hours / 24} ${hours === 24 ? "day" : "days"}` : `${hours} ${hours === 1 ? "hour" : "hours"}`;
+  return hours % 24 === 0 && hours >= 48 ? `${hours / 24} days` : `${hours} ${hours === 1 ? "hour" : "hours"}`;
 }
 
 /**

@@ -31,7 +31,7 @@ describe("waitlistVerificationEmail", () => {
   });
 
   it("states the expiry", () => {
-    expect(waitlistVerificationEmail(input).text).toContain("expires in 1 day");
+    expect(waitlistVerificationEmail(input).text).toContain("expires in 24 hours");
     expect(waitlistVerificationEmail({ ...input, ttlHours: 2 }).html).toContain("expires in 2 hours");
     expect(waitlistVerificationEmail({ ...input, ttlHours: 48 }).text).toContain("expires in 2 days");
   });

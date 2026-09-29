@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import type postgres from "postgres";
-import type { EmailProvider } from "@/lib/email";
+import type { DeliveryAttempt, EmailRouter } from "@/lib/email";
 import { waitlistVerificationEmail } from "@/lib/email/templates/waitlist-verification";
 import { generateToken, hashToken, isWellFormedToken, tokenTtlHours, verificationUrl } from "./verification-token";
 
@@ -13,7 +14,8 @@ import { generateToken, hashToken, isWellFormedToken, tokenTtlHours, verificatio
 
 export type VerificationDeps = {
   sql: postgres.Sql;
-  email: EmailProvider;
+  /** Always the router, never a provider: the service doesn't know who delivers. */
+  email: EmailRouter;
   siteUrl: string;
 };
 
@@ -33,6 +35,22 @@ export const maxSendsPerDay = () => envInt("VERIFICATION_MAX_SENDS_PER_DAY", 5, 
 /** Structured operational log. Never includes addresses or tokens. */
 export function logEvent(event: string, fields: Record<string, string | number | boolean> = {}) {
   console.info(JSON.stringify({ event, ...fields }));
+}
+
+const MESSAGE_TYPE = "waitlist-verification";
+
+/** Best effort: tracking must never block or fail a signup. */
+async function recordDeliveries(sql: postgres.Sql, messageId: string, signupId: string, attempts: DeliveryAttempt[]) {
+  for (const a of attempts) {
+    await sql`
+      INSERT INTO waitlist.email_deliveries
+        (message_id, signup_id, message_type, provider, status, failure_class, error_code, provider_message_id)
+      VALUES (${messageId}, ${signupId}, ${MESSAGE_TYPE}, ${a.provider}, ${a.ok ? "sent" : "failed"},
+              ${a.ok ? null : (a.failure ?? "unknown")}, ${a.errorCode ?? null}, ${a.providerMessageId ?? null})
+      ON CONFLICT (message_id, provider) DO NOTHING`.catch((err: unknown) =>
+      console.error("[email] could not record delivery attempt:", err instanceof Error ? err.message : err),
+    );
+  }
 }
 
 type SignupRow = { id: string; email: string; verification_status: "pending" | "verified" };
@@ -119,13 +137,25 @@ async function sendVerification(row: SignupRow, deps: VerificationDeps): Promise
     return "verification_sent";
   }
 
-  const message = waitlistVerificationEmail({
-    to: row.email,
-    verifyUrl: verificationUrl(deps.siteUrl, token),
-    siteUrl: deps.siteUrl,
-    ttlHours: ttl,
-  });
-  const result = await deps.email.send(message).catch(() => ({ ok: false as const, provider: deps.email.name, failure: "unknown" as const }));
+  // One logical email per claimed token. Both providers get the same id as
+  // their idempotency key, and every attempt is recorded under it.
+  const messageId = randomUUID();
+  const message = {
+    ...waitlistVerificationEmail({
+      to: row.email,
+      verifyUrl: verificationUrl(deps.siteUrl, token),
+      siteUrl: deps.siteUrl,
+      ttlHours: ttl,
+    }),
+    tag: MESSAGE_TYPE,
+  };
+  const result = await deps.email.send(message, { idempotencyKey: messageId }).catch(() => ({
+    ok: false as const,
+    provider: deps.email.name,
+    failure: "unknown" as const,
+    attempts: [] as DeliveryAttempt[],
+  }));
+  await recordDeliveries(sql, messageId, row.id, result.attempts);
 
   if (result.ok) {
     logEvent("waitlist_verification_sent", { provider: result.provider });

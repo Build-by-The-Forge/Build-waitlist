@@ -6,6 +6,7 @@
 import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { memoryProvider } from "@/lib/email/dev-providers";
+import { createEmailRouter } from "@/lib/email/router";
 import { createSharedRateLimiter } from "./shared-rate-limit";
 import { requestSignup, resendVerification, verifyToken, type VerificationDeps } from "./verification";
 import { hashToken } from "./verification-token";
@@ -28,7 +29,86 @@ describe.skipIf(!url)("email verification (Postgres)", () => {
   beforeEach(() => {
     vi.spyOn(console, "info").mockImplementation(() => {});
     email = memoryProvider();
-    deps = { sql, email, siteUrl: SITE };
+    deps = { sql, email: createEmailRouter({ primary: email, log: () => {} }), siteUrl: SITE };
+  });
+
+  const deliveries = async (e: string) =>
+    sql`SELECT d.message_id, d.provider, d.status, d.failure_class, d.provider_message_id
+        FROM waitlist.email_deliveries d JOIN waitlist.signups s ON s.id = d.signup_id
+        WHERE s.email_normalized = ${e} ORDER BY d.id`;
+
+  describe("Brevo primary, Resend fallback", () => {
+    let brevo: ReturnType<typeof memoryProvider>;
+    let resend: ReturnType<typeof memoryProvider>;
+
+    beforeEach(() => {
+      brevo = memoryProvider("brevo");
+      resend = memoryProvider("resend");
+      deps = { sql, email: createEmailRouter({ primary: brevo, fallback: resend, log: () => {} }), siteUrl: SITE };
+    });
+
+    it("Brevo success → sent by Brevo only, one delivery row", async () => {
+      const e = addr();
+      expect(await signup(e)).toBe("verification_sent");
+      expect([brevo.sent.length, resend.sent.length]).toEqual([1, 0]);
+      const d = await deliveries(e);
+      expect(d.map((x) => [x.provider, x.status])).toEqual([["brevo", "sent"]]);
+      expect(d[0].provider_message_id).toBe("brevo_1");
+    });
+
+    it("Brevo transient → Resend delivers the same link; token valid; both attempts recorded under one message id", async () => {
+      const e = addr();
+      brevo.failNext = "transient";
+      expect(await signup(e)).toBe("verification_sent");
+      expect([brevo.sent.length, resend.sent.length]).toEqual([0, 1]);
+      const d = await deliveries(e);
+      expect(d.map((x) => [x.provider, x.status, x.failure_class])).toEqual([
+        ["brevo", "failed", "transient"],
+        ["resend", "sent", null],
+      ]);
+      expect(d[0].message_id).toBe(d[1].message_id);
+      expect(resend.sent[0].idempotencyKey).toBe(d[0].message_id);
+      expect(await verifyToken(tokenFrom(resend.sent[0].text), sql)).toBe("verified");
+      const [{ count }] = await sql`SELECT count(*)::int AS count FROM waitlist.signups WHERE email_normalized = ${e}`;
+      expect(count).toBe(1);
+    });
+
+    it("Brevo unknown outcome → no fallback (no duplicate), treated as sent, cooldown kept", async () => {
+      const e = addr();
+      brevo.failNext = "unknown";
+      expect(await signup(e)).toBe("verification_sent");
+      expect(resend.sent).toHaveLength(0);
+      expect((await row(e))?.verification_sent_at).not.toBeNull();
+      expect((await deliveries(e)).map((x) => [x.provider, x.failure_class])).toEqual([["brevo", "unknown"]]);
+    });
+
+    it("Brevo permanent rejection → no fallback, send_failed, retry allowed", async () => {
+      const e = addr();
+      brevo.failNext = "permanent";
+      expect(await signup(e)).toBe("send_failed");
+      expect(resend.sent).toHaveLength(0);
+      expect((await row(e))?.verification_sent_at).toBeNull();
+    });
+
+    it("both providers fail → send_failed; the signup stays pending and never verified", async () => {
+      const e = addr();
+      brevo.failNext = "transient";
+      resend.failNext = "transient";
+      expect(await signup(e)).toBe("send_failed");
+      expect((await row(e))?.verification_status).toBe("pending");
+      expect((await deliveries(e)).map((x) => x.status)).toEqual(["failed", "failed"]);
+    });
+
+    it("resend button path also goes through the router and fallback", async () => {
+      const e = addr();
+      await signup(e);
+      await sql`UPDATE waitlist.signups SET verification_sent_at = now() - interval '2 minutes' WHERE email_normalized = ${e}`;
+      brevo.failNext = "transient";
+      await resendVerification(e, deps);
+      expect([brevo.sent.length, resend.sent.length]).toEqual([1, 1]);
+      const d = await deliveries(e);
+      expect(new Set(d.map((x) => x.message_id)).size).toBe(2); // one logical email per claimed link
+    });
   });
 
   afterAll(async () => {

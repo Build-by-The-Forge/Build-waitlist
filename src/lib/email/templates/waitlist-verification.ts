@@ -44,8 +44,8 @@ export function waitlistVerificationEmail({ to, verifyUrl, siteUrl, ttlHours }: 
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;">
         <tr>
           <td style="padding:0 8px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-            <span style="display:inline-block;width:28px;height:28px;line-height:28px;border-radius:8px;background:#0f1013;color:#e8572a;text-align:center;font-size:15px;vertical-align:middle;">&#10022;</span>
-            <span style="font-size:17px;font-weight:700;letter-spacing:2px;color:#0f1013;vertical-align:middle;padding-left:8px;">BUILD</span>
+            <img src="${site}/brand/build-mark-email.png" width="24" height="28" alt="" style="display:inline-block;width:24px;height:28px;border:0;vertical-align:middle;">
+            <span style="font-size:17px;font-weight:700;letter-spacing:2px;color:#10163a;vertical-align:middle;padding-left:8px;">BUILD</span>
           </td>
         </tr>
         <tr>

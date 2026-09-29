@@ -10,7 +10,7 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Framer Mo
 npm install
 cp .env.example .env.local   # then set DATABASE_URL to a development database
 npm run db:migrate
-npm run dev                  # http://localhost:3000
+npm run dev                  # http://localhost:3001 (pinned; matches NEXT_PUBLIC_SITE_URL)
 ```
 
 Signups need Postgres, because email verification relies on it. Point `DATABASE_URL` at a development database, never production. In development, leave `EMAIL_PROVIDER` unset: verification links are printed to the terminal instead of emailed.
@@ -170,7 +170,7 @@ verification service ─► email router ─► Brevo (primary) ─────�
 
 ### First-time setup
 
-1. In Google Cloud Console, go to **APIs & Services → Credentials → Create OAuth client ID** (Web application). Add the authorized redirect URI `https://<your-domain>/api/auth/callback/google` (and `http://localhost:3000/api/auth/callback/google` for local use).
+1. In Google Cloud Console, go to **APIs & Services → Credentials → Create OAuth client ID** (Web application). Add the authorized redirect URI `https://<your-domain>/api/auth/callback/google` (and `http://localhost:3001/api/auth/callback/google` for local use).
 2. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `ADMIN_BOOTSTRAP_EMAIL` to your own Google address.
 3. Run `npm run db:migrate`, deploy, open `/admin/login`, and continue with that Google account. You become the admin. After that, `ADMIN_BOOTSTRAP_EMAIL` is ignored.
 

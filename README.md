@@ -36,6 +36,7 @@ Signups need Postgres, because email verification relies on it. Point `DATABASE_
 | `BREVO_API_KEY` / `RESEND_API_KEY` | Production | Provider keys. With `EMAIL_PROVIDER=brevo`, setting `RESEND_API_KEY` enables Resend as the fallback |
 | `EMAIL_FROM` / `EMAIL_FROM_NAME` | Production | Sender address on a domain verified in both providers, and display name (`BUILD`) |
 | `EMAIL_FALLBACK_PROVIDER` | No | Override the fallback (`resend` or `brevo`) or disable it (`none`) |
+| `EMAIL_ASSET_BASE_URL` | No | Public origin serving `/brand/build-mark-email.png` for emails. Email clients (e.g. Gmail's image proxy) can't load images from `localhost`, so without it local emails show an HTML "B" badge instead of the logo |
 | `EMAIL_REPLY_TO` | Recommended | A monitored inbox for replies, such as deletion requests (the privacy page tells people to reply) |
 | `VERIFICATION_TOKEN_TTL_HOURS` / `VERIFICATION_RESEND_COOLDOWN_SECONDS` / `VERIFICATION_MAX_SENDS_PER_DAY` | No | Defaults: 24, 60, 5 |
 | `WAITLIST_ALLOWED_ORIGINS` | No | Extra comma-separated origins allowed to POST (e.g. preview deploys) |

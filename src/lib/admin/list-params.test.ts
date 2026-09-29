@@ -3,7 +3,7 @@ import { likePattern, parseListParams } from "./list-params";
 
 describe("parseListParams", () => {
   it("defaults to page 1 with no query", () => {
-    expect(parseListParams({})).toEqual({ q: "", page: 1 });
+    expect(parseListParams({})).toEqual({ q: "", page: 1, status: "all" });
   });
 
   it("trims and caps the query", () => {
@@ -17,7 +17,17 @@ describe("parseListParams", () => {
 
   it("takes the first value of repeated params and reads URLSearchParams", () => {
     expect(parseListParams({ page: ["3", "9"] }).page).toBe(3);
-    expect(parseListParams(new URLSearchParams("q=ada&page=2"))).toEqual({ q: "ada", page: 2 });
+    expect(parseListParams(new URLSearchParams("q=ada&page=2"))).toEqual({ q: "ada", page: 2, status: "all" });
+  });
+});
+
+describe("status filter", () => {
+  it.each(["verified", "pending", "all"])("accepts %s", (status) => {
+    expect(parseListParams({ status }).status).toBe(status);
+  });
+
+  it.each(["VERIFIED", "deleted", "", "toString"])("falls back to all for %j", (status) => {
+    expect(parseListParams({ status }).status).toBe("all");
   });
 });
 

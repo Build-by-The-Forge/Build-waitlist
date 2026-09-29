@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight, Download, LogOut, Search } from "lucide-reac
 import { signOut } from "@/auth";
 import { Logo } from "@/components/ui/logo";
 import { requireAdminPage } from "@/lib/admin/session";
-import { PAGE_SIZE, parseListParams } from "@/lib/admin/list-params";
+import { PAGE_SIZE, parseListParams, STATUS_FILTERS, type StatusFilter } from "@/lib/admin/list-params";
 import { listSignups, signupStats } from "@/lib/admin/signups";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +25,25 @@ const zoneLabel =
     .find((p) => p.type === "timeZoneName")?.value ?? TIME_ZONE;
 const num = new Intl.NumberFormat("en");
 
-function pageHref(q: string, page: number) {
+function listHref({ q, page = 1, status }: { q: string; page?: number; status: StatusFilter }) {
   const sp = new URLSearchParams();
   if (q) sp.set("q", q);
+  if (status !== "all") sp.set("status", status);
   if (page > 1) sp.set("page", String(page));
   const s = sp.toString();
   return `/admin/waitlist${s ? `?${s}` : ""}`;
+}
+
+function StatusBadge({ status }: { status: "pending" | "verified" }) {
+  return status === "verified" ? (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-success-muted px-2.5 py-0.5 text-xs font-medium text-success">
+      <span className="size-1.5 rounded-full bg-success" aria-hidden="true" /> Verified
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-foreground-muted">
+      <span className="size-1.5 rounded-full bg-foreground-subtle" aria-hidden="true" /> Pending
+    </span>
+  );
 }
 
 export default async function AdminWaitlistPage({ searchParams }: Props) {
@@ -46,8 +59,12 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
     await signOut({ redirectTo: "/admin/login" });
   }
 
+  // "Total" keeps its original meaning (every signup); Verified is the
+  // confirmed waitlist. Any public-facing count should use Verified.
   const cards = [
     { label: "Total signups", value: stats.total },
+    { label: "Verified", value: stats.verified },
+    { label: "Pending", value: stats.pending },
     { label: "Today", value: stats.today },
     { label: "Last 7 days", value: stats.last7Days },
     { label: "Last 30 days", value: stats.last30Days },
@@ -80,7 +97,7 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
       <main id="main" className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Waitlist</h1>
 
-        <dl className="mt-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <dl className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {cards.map((c) => (
             <div key={c.label} className="rounded-2xl bg-surface p-5 ring-1 ring-border-subtle">
               <dt className="text-small text-foreground-muted">{c.label}</dt>
@@ -110,6 +127,7 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
               <label htmlFor="q" className="sr-only">
                 Search emails
               </label>
+              {params.status !== "all" && <input type="hidden" name="status" value={params.status} />}
               <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-foreground-subtle" aria-hidden="true" />
               <input
                 id="q"
@@ -131,10 +149,32 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
           </div>
           <p className="mt-2 text-xs text-foreground-subtle">Exports contain personal data and are logged.</p>
 
-          <div className="mt-5 overflow-hidden rounded-2xl bg-surface ring-1 ring-border-subtle">
+          <nav aria-label="Filter by verification status" className="mt-5 flex gap-1 rounded-full bg-surface-muted p-1 text-small sm:w-fit">
+            {STATUS_FILTERS.map((s) => (
+              <Link
+                key={s}
+                href={listHref({ q: params.q, status: s })}
+                aria-current={params.status === s ? "page" : undefined}
+                className={cn(
+                  "flex-1 rounded-full px-4 py-1.5 text-center font-medium capitalize transition-colors sm:flex-none",
+                  params.status === s ? "bg-surface text-foreground shadow-sm ring-1 ring-border-subtle" : "text-foreground-muted hover:text-foreground",
+                )}
+              >
+                {s}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-3 overflow-hidden rounded-2xl bg-surface ring-1 ring-border-subtle">
             {list.rows.length === 0 ? (
               <p className="px-6 py-16 text-center text-foreground-muted">
-                {params.q ? <>No signups match &ldquo;{params.q}&rdquo;.</> : "No signups yet. They'll appear here as people join."}
+                {params.q ? (
+                  <>No signups match &ldquo;{params.q}&rdquo;.</>
+                ) : params.status !== "all" ? (
+                  `No ${params.status} signups.`
+                ) : (
+                  "No signups yet. They'll appear here as people join."
+                )}
               </p>
             ) : (
               <table className="w-full text-left text-[0.9375rem]">
@@ -142,6 +182,9 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
                   <tr>
                     <th scope="col" className="px-5 py-3 font-medium">
                       Email
+                    </th>
+                    <th scope="col" className="px-5 py-3 font-medium">
+                      Status
                     </th>
                     <th scope="col" className="hidden px-5 py-3 font-medium sm:table-cell">
                       Joined ({zoneLabel})
@@ -160,6 +203,15 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
                           {dateFmt.format(r.createdAt)}
                           {r.source ? ` · ${r.source}` : ""}
                         </span>
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <StatusBadge status={r.verificationStatus} />
+                        {r.verifiedAt && (
+                          <time dateTime={r.verifiedAt.toISOString()} className="sr-only">
+                            {" "}
+                            on {dateFmt.format(r.verifiedAt)}
+                          </time>
+                        )}
                       </td>
                       <td className="hidden px-5 py-3.5 whitespace-nowrap text-foreground-muted tabular-nums sm:table-cell">
                         <time dateTime={r.createdAt.toISOString()}>{dateFmt.format(r.createdAt)}</time>
@@ -180,10 +232,10 @@ export default async function AdminWaitlistPage({ searchParams }: Props) {
                 {num.format(from)}–{num.format(to)} of {num.format(list.total)}
               </span>
               <div className="flex gap-2">
-                <PageLink href={pageHref(params.q, page - 1)} disabled={page <= 1} label="Previous page">
+                <PageLink href={listHref({ q: params.q, status: params.status, page: page - 1 })} disabled={page <= 1} label="Previous page">
                   <ChevronLeft className="size-4" aria-hidden="true" />
                 </PageLink>
-                <PageLink href={pageHref(params.q, page + 1)} disabled={page >= list.pageCount} label="Next page">
+                <PageLink href={listHref({ q: params.q, status: params.status, page: page + 1 })} disabled={page >= list.pageCount} label="Next page">
                   <ChevronRight className="size-4" aria-hidden="true" />
                 </PageLink>
               </div>

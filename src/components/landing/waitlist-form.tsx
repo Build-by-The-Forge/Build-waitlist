@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { ctaSource } from "@/lib/waitlist/attribution";
 import { isValidEmail } from "@/lib/waitlist/email";
 import type { WaitlistStatus } from "@/lib/waitlist/types";
 
@@ -25,7 +26,8 @@ const ERROR_MESSAGES: Record<Exclude<WaitlistStatus, "created" | "duplicate">, s
   error: "Something went wrong. Please try again.",
 };
 
-export function WaitlistForm({ source = "final_cta", className }: { source?: string; className?: string }) {
+/** `fallbackSource` is recorded when the visitor reached the form without a Join button. */
+export function WaitlistForm({ fallbackSource = "final_cta", className }: { fallbackSource?: string; className?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<State>({ kind: "idle" });
   const mountedAt = useRef(0);
@@ -39,6 +41,7 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (state.kind === "submitting") return;
+    const source = ctaSource(fallbackSource);
 
     if (!isValidEmail(email)) {
       setState({ kind: "error", message: ERROR_MESSAGES.invalid });
@@ -148,7 +151,7 @@ export function WaitlistForm({ source = "final_cta", className }: { source?: str
               onFocus={() => {
                 if (focused.current) return;
                 focused.current = true;
-                track("waitlist_form_focus", { source });
+                track("waitlist_form_focus", { source: ctaSource(fallbackSource) });
               }}
             />
             {/* Honeypot: invisible to people and assistive tech, tempting to bots. */}

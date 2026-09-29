@@ -25,7 +25,7 @@ export function WaitlistCTA() {
           </p>
         </Reveal>
         <Reveal delay={0.1} className="mt-10 flex w-full justify-center">
-          <WaitlistForm source="final_cta" />
+          <WaitlistForm fallbackSource="final_cta" />
         </Reveal>
       </Container>
     </section>

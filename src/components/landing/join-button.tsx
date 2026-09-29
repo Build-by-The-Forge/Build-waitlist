@@ -4,6 +4,7 @@ import type { ComponentProps } from "react";
 import { ButtonLink } from "@/components/ui/button";
 import { track } from "@/lib/analytics";
 import { WAITLIST_ANCHOR } from "@/lib/site";
+import { rememberCta } from "@/lib/waitlist/attribution";
 import { WAITLIST_INPUT_ID } from "@/components/landing/waitlist-form";
 
 /** Every "Join the Waitlist" CTA: scrolls to the form and puts the cursor in the email field. */
@@ -17,6 +18,7 @@ export function JoinButton({
       href={`#${WAITLIST_ANCHOR}`}
       onClick={(e) => {
         track("hero_cta_click", { location });
+        rememberCta(location);
         onClick?.(e);
         const section = document.getElementById(WAITLIST_ANCHOR);
         const input = document.getElementById(WAITLIST_INPUT_ID);

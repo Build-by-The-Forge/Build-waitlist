@@ -1,5 +1,4 @@
-/** See the FailureClass docs in ./types. */
-export type FailureClass = "transient" | "unknown" | "permanent" | "configuration";
+import type { FailureClass } from "./types";
 
 /**
  * Classifies a thrown fetch error. The key question is whether the request

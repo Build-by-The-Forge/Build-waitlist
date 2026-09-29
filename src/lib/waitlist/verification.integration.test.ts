@@ -5,7 +5,7 @@
  */
 import postgres from "postgres";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { memoryProvider } from "@/lib/email/providers";
+import { memoryProvider } from "@/lib/email/dev-providers";
 import { createSharedRateLimiter } from "./shared-rate-limit";
 import { requestSignup, resendVerification, verifyToken, type VerificationDeps } from "./verification";
 import { hashToken } from "./verification-token";
@@ -123,7 +123,7 @@ describe.skipIf(!url)("email verification (Postgres)", () => {
 
   it("delivery failure → send_failed, row kept, immediate retry allowed", async () => {
     const e = addr();
-    email.failNext = true;
+    email.failNext = "transient";
     expect(await signup(e)).toBe("send_failed");
     expect((await row(e))?.verification_status).toBe("pending");
     expect(await signup(e)).toBe("verification_sent");

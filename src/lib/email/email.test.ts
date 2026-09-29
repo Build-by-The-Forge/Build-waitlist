@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { createEmailProvider, EmailDeliveryError, EmailNotConfiguredError } from "./index";
-import { memoryProvider, resendProvider } from "./providers";
+import { describe, expect, it } from "vitest";
+import { createEmailProvider, EmailNotConfiguredError } from "./index";
+import { memoryProvider } from "./dev-providers";
+import { formatSender, parseSender } from "./sender";
 
 const message = { to: "ada@example.com", subject: "Hi", html: "<p>Hi</p>", text: "Hi" };
 
@@ -14,10 +15,11 @@ describe("createEmailProvider", () => {
     expect(() => createEmailProvider({ NODE_ENV: "production", EMAIL_PROVIDER: "console" })).toThrow(EmailNotConfiguredError);
   });
 
-  it("requires key and sender for resend", () => {
-    expect(() => createEmailProvider({ EMAIL_PROVIDER: "resend", EMAIL_FROM: "a@b.co" })).toThrow(/EMAIL_API_KEY/);
-    expect(() => createEmailProvider({ EMAIL_PROVIDER: "resend", EMAIL_API_KEY: "k" })).toThrow(/EMAIL_FROM/);
-    expect(createEmailProvider({ EMAIL_PROVIDER: "Resend", EMAIL_API_KEY: "k", EMAIL_FROM: "a@b.co" }).name).toBe("resend");
+  it("requires a key and a valid sender for resend", () => {
+    expect(() => createEmailProvider({ EMAIL_PROVIDER: "resend", EMAIL_FROM: "a@b.co" })).toThrow(/RESEND_API_KEY/);
+    expect(() => createEmailProvider({ EMAIL_PROVIDER: "resend", RESEND_API_KEY: "k" })).toThrow(/EMAIL_FROM/);
+    expect(() => createEmailProvider({ EMAIL_PROVIDER: "resend", RESEND_API_KEY: "k", EMAIL_FROM: "nope" })).toThrow(/EMAIL_FROM/);
+    expect(createEmailProvider({ EMAIL_PROVIDER: "Resend", RESEND_API_KEY: "k", EMAIL_FROM: "a@b.co" }).name).toBe("resend");
   });
 
   it("rejects unknown providers", () => {
@@ -25,48 +27,35 @@ describe("createEmailProvider", () => {
   });
 });
 
-describe("resendProvider", () => {
-  it("posts the message with auth and returns the id", async () => {
-    const fetch = vi.fn(async () => new Response(JSON.stringify({ id: "re_123" }), { status: 200 }));
-    const p = resendProvider({ apiKey: "secret-key", from: "BUILD <hello@build.example>", replyTo: "team@build.example", fetch });
-    await expect(p.send(message)).resolves.toEqual({ id: "re_123" });
-
-    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe("https://api.resend.com/emails");
-    expect((init.headers as Record<string, string>).Authorization).toBe("Bearer secret-key");
-    expect(JSON.parse(init.body as string)).toMatchObject({
-      from: "BUILD <hello@build.example>",
-      to: ["ada@example.com"],
-      reply_to: "team@build.example",
-      subject: "Hi",
-    });
+describe("sender", () => {
+  it("accepts a bare address, with the name from EMAIL_FROM_NAME", () => {
+    expect(parseSender("hello@build.example", "BUILD")).toEqual({ email: "hello@build.example", name: "BUILD" });
+    expect(parseSender("hello@build.example")).toEqual({ email: "hello@build.example", name: undefined });
   });
 
-  it("raises a safe delivery error on API failure, without leaking the key", async () => {
-    const fetch = vi.fn(async () => new Response(JSON.stringify({ name: "validation_error" }), { status: 403 }));
-    const p = resendProvider({ apiKey: "secret-key", from: "a@b.co", fetch });
-    const err = await p.send(message).catch((e) => e);
-    expect(err).toBeInstanceOf(EmailDeliveryError);
-    expect(err.status).toBe(403);
-    expect(err.message).toContain("validation_error");
-    expect(err.message).not.toContain("secret-key");
+  it("accepts the legacy 'Name <address>' form", () => {
+    expect(parseSender("BUILD <hello@build.example>")).toEqual({ email: "hello@build.example", name: "BUILD" });
+    expect(parseSender('"BUILD Team" <hello@build.example>', "Override")).toEqual({ email: "hello@build.example", name: "Override" });
   });
 
-  it("wraps network errors", async () => {
-    const fetch = vi.fn(async () => {
-      throw new TypeError("fetch failed");
-    });
-    const err = await resendProvider({ apiKey: "k", from: "a@b.co", fetch }).send(message).catch((e) => e);
-    expect(err).toBeInstanceOf(EmailDeliveryError);
+  it("rejects missing or malformed senders", () => {
+    expect(parseSender(undefined)).toBeNull();
+    expect(parseSender("not-an-address")).toBeNull();
+  });
+
+  it("formats for single-string APIs, quoting unusual names", () => {
+    expect(formatSender({ email: "a@b.co", name: "BUILD" })).toBe("BUILD <a@b.co>");
+    expect(formatSender({ email: "a@b.co" })).toBe("a@b.co");
+    expect(formatSender({ email: "a@b.co", name: 'BUILD, "Team"' })).toBe('"BUILD, Team" <a@b.co>');
   });
 });
 
 describe("memoryProvider", () => {
-  it("records messages and can simulate one failure", async () => {
+  it("records messages with their idempotency key and can simulate failures", async () => {
     const p = memoryProvider();
-    p.failNext = true;
-    await expect(p.send(message)).rejects.toBeInstanceOf(EmailDeliveryError);
-    await p.send(message);
-    expect(p.sent).toHaveLength(1);
+    p.failNext = "transient";
+    expect(await p.send(message)).toMatchObject({ ok: false, failure: "transient" });
+    expect(await p.send(message, { idempotencyKey: "k1" })).toMatchObject({ ok: true });
+    expect(p.sent).toEqual([{ ...message, idempotencyKey: "k1" }]);
   });
 });

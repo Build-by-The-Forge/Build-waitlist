@@ -119,26 +119,29 @@ async function sendVerification(row: SignupRow, deps: VerificationDeps): Promise
     return "verification_sent";
   }
 
-  try {
-    const message = waitlistVerificationEmail({
-      to: row.email,
-      verifyUrl: verificationUrl(deps.siteUrl, token),
-      siteUrl: deps.siteUrl,
-      ttlHours: ttl,
-    });
-    await deps.email.send(message);
-    logEvent("waitlist_verification_sent", { provider: deps.email.name });
+  const message = waitlistVerificationEmail({
+    to: row.email,
+    verifyUrl: verificationUrl(deps.siteUrl, token),
+    siteUrl: deps.siteUrl,
+    ttlHours: ttl,
+  });
+  const result = await deps.email.send(message).catch(() => ({ ok: false as const, provider: deps.email.name, failure: "unknown" as const }));
+
+  if (result.ok) {
+    logEvent("waitlist_verification_sent", { provider: result.provider });
     return "verification_sent";
-  } catch (err) {
-    // The pending row and token stay; clearing sent_at lifts the cooldown so
-    // the person can retry straight away instead of being stuck.
-    await sql`UPDATE waitlist.signups SET verification_sent_at = NULL, updated_at = now() WHERE id = ${row.id}`.catch(() => {});
-    logEvent("waitlist_verification_send_failed", {
-      provider: deps.email.name,
-      reason: err instanceof Error ? err.message.slice(0, 160) : "unknown",
-    });
-    return "send_failed";
   }
+  if (result.failure === "unknown") {
+    // The provider may have accepted it. Treat as sent (keep the cooldown) so
+    // we don't invite a duplicate; after the cooldown the person can resend.
+    logEvent("waitlist_verification_send_unknown", { provider: result.provider });
+    return "verification_sent";
+  }
+  // Definitely not sent. The pending row and token stay; clearing sent_at
+  // lifts the cooldown so the person can retry straight away.
+  await sql`UPDATE waitlist.signups SET verification_sent_at = NULL, updated_at = now() WHERE id = ${row.id}`.catch(() => {});
+  logEvent("waitlist_verification_send_failed", { provider: result.provider, failure_class: result.failure });
+  return "send_failed";
 }
 
 /**

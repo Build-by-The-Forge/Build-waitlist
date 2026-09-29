@@ -215,7 +215,7 @@ ORDER BY a.created_at DESC LIMIT 50;
 | Variable | Local development | Vercel Preview | Vercel Production |
 | --- | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` (public) | `http://localhost:3001` | leave unset (uses the deployment URL) | `https://<project>.vercel.app` |
-| `DATABASE_URL` 🔒 | development database | development database, **not** production | Supabase transaction pooler `:6543`, as `waitlist_app` |
+| `DATABASE_URL` 🔒 | development database | development database, **not** production | `postgresql://waitlist_app.<project-ref>:<password>@<pooler-host>:6543/postgres?sslmode=require` (transaction pooler, restricted role, TLS required) |
 | `AUTH_SECRET` 🔒 | local value | its own value | its own long random value |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` 🔒 | Google client with the localhost redirect | same as production, or unset (admin login won't work on preview URLs) | Google client with the production redirect |
 | `ADMIN_BOOTSTRAP_EMAIL` | your Google address | your Google address | your Google address (only used while no admin exists) |

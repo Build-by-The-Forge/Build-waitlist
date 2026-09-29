@@ -9,7 +9,9 @@
 -- :app_password with a quoted literal, e.g. 'long-random-password'.
 -- Then connect through the pooler with the role name suffixed by your project
 -- ref (Supavisor needs it), on the transaction pooler for serverless:
---   postgresql://waitlist_app.<project-ref>:<password>@<pooler-host>:6543/postgres
+--   postgresql://waitlist_app.<project-ref>:<password>@<pooler-host>:6543/postgres?sslmode=require
+-- Keep ?sslmode=require: the pooler also accepts unencrypted connections, and
+-- postgres.js only uses TLS when asked to.
 
 CREATE ROLE waitlist_app LOGIN PASSWORD :app_password;
 

@@ -10,8 +10,13 @@ CREATE ROLE waitlist_app LOGIN PASSWORD :app_password;
 -- The site can only see the waitlist schema: nothing from the BUILD platform.
 GRANT USAGE ON SCHEMA waitlist TO waitlist_app;
 
--- Public signups insert; the admin dashboard reads. No UPDATE or DELETE.
+-- Public signups insert; the admin dashboard reads. Email verification may
+-- only touch its own columns. No DELETE.
 GRANT SELECT, INSERT ON waitlist.signups TO waitlist_app;
+GRANT UPDATE (
+  verification_status, verified_at, verification_token_hash, verification_token_expires_at,
+  verification_sent_at, verification_send_count, verification_window_start, updated_at
+) ON waitlist.signups TO waitlist_app;
 GRANT USAGE ON SEQUENCE waitlist.signups_id_seq TO waitlist_app;
 
 -- Sign-in may bootstrap the first admin, bind a provisioned admin's Google

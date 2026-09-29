@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSql } from "@/lib/db";
-import { getEmailProvider } from "@/lib/email";
+import { getEmailRouter } from "@/lib/email";
 import { site } from "@/lib/site";
 import { isValidEmail, normalizeEmail } from "@/lib/waitlist/email";
 import { clientKey, isAllowedOrigin, readJsonBody } from "@/lib/waitlist/request";
@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await resendVerification(emailNormalized, { sql, email: getEmailProvider(), siteUrl: site.url });
+    await resendVerification(emailNormalized, { sql, email: getEmailRouter(), siteUrl: site.url });
   } catch (err) {
     console.error("[waitlist] resend failed:", err instanceof Error ? err.message : err);
   }

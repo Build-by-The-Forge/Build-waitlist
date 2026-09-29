@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSql } from "@/lib/db";
-import { getEmailProvider } from "@/lib/email";
+import { EmailNotConfiguredError, getEmailRouter } from "@/lib/email";
 import { site } from "@/lib/site";
 import { mailDomainAccepts } from "@/lib/waitlist/domain";
 import { isValidEmail, normalizeEmail } from "@/lib/waitlist/email";
@@ -60,13 +60,15 @@ export async function POST(req: NextRequest) {
   try {
     const outcome = await requestSignup(
       { email, emailNormalized: normalizeEmail(email), source },
-      { sql, email: getEmailProvider(), siteUrl: site.url },
+      { sql, email: getEmailRouter(), siteUrl: site.url },
     );
     if (outcome === "already_verified") return reply("duplicate", 200);
     if (outcome === "send_failed") return reply("email_failed", 503, { "Retry-After": "30" });
     return reply("verification_sent", 202);
   } catch (err) {
     console.error("[waitlist] signup failed:", err instanceof Error ? err.message : err);
+    // Misconfigured email reads like any other send failure to the visitor.
+    if (err instanceof EmailNotConfiguredError) return reply("email_failed", 503, { "Retry-After": "30" });
     return reply("error", 500);
   }
 }

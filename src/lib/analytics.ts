@@ -9,9 +9,12 @@ export type AnalyticsEvent =
   | "product_demo_view"
   | "waitlist_form_focus"
   | "waitlist_submit"
-  | "waitlist_success"
   | "waitlist_duplicate"
-  | "waitlist_error";
+  | "waitlist_error"
+  | "waitlist_verification_requested"
+  | "waitlist_verification_resend"
+  | "waitlist_verification_completed"
+  | "waitlist_verification_failed";
 
 type Props = Record<string, string | number | boolean>;
 

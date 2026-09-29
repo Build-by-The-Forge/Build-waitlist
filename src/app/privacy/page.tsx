@@ -48,7 +48,9 @@ export default function PrivacyPage() {
         <h2>Where it&rsquo;s stored and who processes it</h2>
         <p>
           Waitlist data is stored in a database hosted by Supabase. The website runs on Vercel. Confirmation emails are
-          sent through Resend, which receives your email address only to deliver our messages.
+          sent through Brevo, with Resend as a backup if Brevo is unavailable. Each receives your email address only
+          to deliver our messages. We keep a record of which service sent each confirmation email (never the email&rsquo;s
+          contents or its link) so we can troubleshoot delivery.
         </p>
       </section>
       <section>

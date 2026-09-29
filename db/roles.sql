@@ -4,6 +4,12 @@
 -- password, which don't belong in the migration history.
 --
 --   psql "$OWNER_DATABASE_URL" -v app_password="'<strong password>'" -f db/roles.sql
+--
+-- Supabase SQL Editor (no psql variables): paste this file and replace
+-- :app_password with a quoted literal, e.g. 'long-random-password'.
+-- Then connect through the pooler with the role name suffixed by your project
+-- ref (Supavisor needs it), on the transaction pooler for serverless:
+--   postgresql://waitlist_app.<project-ref>:<password>@<pooler-host>:6543/postgres
 
 CREATE ROLE waitlist_app LOGIN PASSWORD :app_password;
 

@@ -199,14 +199,38 @@ ORDER BY a.created_at DESC LIMIT 50;
 
 ## Deploying
 
-1. Provision Postgres. Run `npm run db:migrate` as the owner, then create the app role with `db/roles.sql` and point `DATABASE_URL` at it.
-2. Set `NEXT_PUBLIC_SITE_URL` to the production origin. It's baked in at build time and used for verification links.
+1. Provision Postgres. Run `npm run db:migrate` as the owner, then create the app role with `db/roles.sql` and point `DATABASE_URL` at it. On Supabase, use the **transaction pooler (port 6543)** for Vercel; the app turns off prepared statements there automatically.
+2. Set `NEXT_PUBLIC_SITE_URL` to the production origin. It's baked in at build time and used for verification links. If it's unset on Vercel, the app falls back to Vercel's production domain (previews use their own deployment URL), never localhost.
 3. Set up email (see below) and set `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME` and `EMAIL_REPLY_TO`.
 4. Configure admin sign-in (see [First-time setup](#first-time-setup)) and bootstrap your admin account.
 5. Add an analytics script in `src/app/layout.tsx` once a provider is chosen.
 6. Have the privacy and terms pages (`/privacy`, `/terms`) reviewed before launch.
 
 ### Vercel
+
+**Project settings:** no `vercel.json` is needed; Vercel's Next.js defaults are correct. Framework preset **Next.js**, root directory **`.`** (the repository root), install command default (`npm install`, which follows `package-lock.json`), build command default (`npm run build` → `next build`). Node.js **22.x or 24.x** (Next 16 needs ≥ 20.9; local development uses 24). `AUTH_TRUST_HOST` isn't needed on Vercel.
+
+**Environment matrix** (🔒 = secret, set as Sensitive; never prefix secrets with `NEXT_PUBLIC_`):
+
+| Variable | Local development | Vercel Preview | Vercel Production |
+| --- | --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` (public) | `http://localhost:3001` | leave unset (uses the deployment URL) | `https://<project>.vercel.app` |
+| `DATABASE_URL` 🔒 | development database | development database, **not** production | Supabase transaction pooler `:6543`, as `waitlist_app` |
+| `AUTH_SECRET` 🔒 | local value | its own value | its own long random value |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` 🔒 | Google client with the localhost redirect | same as production, or unset (admin login won't work on preview URLs) | Google client with the production redirect |
+| `ADMIN_BOOTSTRAP_EMAIL` | your Google address | your Google address | your Google address (only used while no admin exists) |
+| `EMAIL_PROVIDER` | `brevo` (or unset = console) | `brevo` | `brevo` |
+| `EMAIL_FALLBACK_PROVIDER` | unset (auto) | unset (auto) | unset (auto = `resend` when its key is set) |
+| `BREVO_API_KEY` 🔒 | set | set | set |
+| `RESEND_API_KEY` 🔒 | set | set | set (dormant until a verified domain exists) |
+| `EMAIL_FROM` / `EMAIL_FROM_NAME` | Brevo-verified sender / `BUILD` | same | same |
+| `EMAIL_REPLY_TO` | optional | optional | a monitored inbox |
+| `WAITLIST_ALLOWED_ORIGINS`, `EMAIL_ASSET_BASE_URL`, `ADMIN_TIMEZONE`, `RATE_LIMIT_SALT`, `VERIFICATION_*` | optional | optional | optional (defaults are fine) |
+
+**Known limitations for the first `*.vercel.app` deployment:**
+- *Resend fallback requires an authenticated sending domain and will be completed when BUILD owns a custom domain.* Routing is built and tested; with a Gmail `EMAIL_FROM`, Resend rejects the sender (`403 validation_error`, logged as a configuration failure).
+- The Gmail sender works through Brevo only because Brevo rewrites it to a `brevosend.com` address. That hurts deliverability (more spam-folder risk). Move to a domain sender when available.
+- Admin login works only on the production URL, and on any preview URL whose callback you explicitly add to Google.
 
 Add these as encrypted environment variables, and keep Production and Preview/Development credentials separate: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_BOOTSTRAP_EMAIL`, `EMAIL_PROVIDER`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO`. None of these may use the `NEXT_PUBLIC_` prefix. Add the production Google OAuth redirect URI `https://<production-domain>/api/auth/callback/google`. Don't reuse local callback URLs. All verification state and rate limits live in Postgres, so nothing depends on instance memory or the filesystem.
 

@@ -1,7 +1,8 @@
 import "server-only";
 import type postgres from "postgres";
 import { getSql } from "@/lib/db";
-import { decideSignIn, normalizeAdminEmail, type AdminRecord, type SignInAttempt, type SignInDecision } from "./authorize";
+import { decideSignIn, MAX_ADMINS, normalizeAdminEmail, type AdminRecord, type SignInAttempt, type SignInDecision } from "./authorize";
+import { parseBootstrapConfig } from "./bootstrap-config";
 
 export const PROVIDER = "google";
 
@@ -41,12 +42,16 @@ export async function authorizeSignIn(attempt: SignInAttempt): Promise<SignInDec
     SELECT id, email, provider_subject, status FROM waitlist.admin_users WHERE email = ${email}`;
   const [{ count }] = await sql<{ count: string }[]>`SELECT count(*) FROM waitlist.admin_users`;
 
-  const bootstrap = process.env.ADMIN_BOOTSTRAP_EMAIL;
+  const bootstrap = parseBootstrapConfig();
+  if (bootstrap.ignored.duplicates || bootstrap.ignored.invalid) {
+    // Counts only: the configured addresses themselves are never logged.
+    console.warn(`[admin] bootstrap config: ignored ${bootstrap.ignored.duplicates} duplicate and ${bootstrap.ignored.invalid} invalid entries`);
+  }
   const decision = decideSignIn(attempt, {
     bySubject: bySubject ? toRecord(bySubject) : null,
     byEmail: byEmail ? toRecord(byEmail) : null,
     adminCount: Number(count),
-    bootstrapEmail: bootstrap ? normalizeAdminEmail(bootstrap) : null,
+    bootstrapEmails: bootstrap.emails,
   });
 
   switch (decision.kind) {
@@ -67,12 +72,18 @@ export async function authorizeSignIn(attempt: SignInAttempt): Promise<SignInDec
     }
 
     case "bootstrap": {
-      // Only inserts while the table is empty; the single-active-admin index
-      // makes concurrent bootstrap attempts race-safe.
+      // Takes the lowest free active-admin seat (1..MAX_ADMINS) and inserts only
+      // while fewer than MAX_ADMINS records exist. The database enforces the
+      // rest: UNIQUE(admin_slot) among active rows means two simultaneous
+      // bootstraps can't share a seat (the loser is denied and can sign in
+      // again), and email/subject uniqueness stops duplicate records.
       const created = await sql<{ id: string }[]>`
-        INSERT INTO waitlist.admin_users (email, provider, provider_subject, last_login_at)
-        SELECT ${email}, ${PROVIDER}, ${attempt.subject}, now()
-        WHERE NOT EXISTS (SELECT 1 FROM waitlist.admin_users)
+        INSERT INTO waitlist.admin_users (email, provider, provider_subject, last_login_at, admin_slot)
+        SELECT ${email}, ${PROVIDER}, ${attempt.subject}, now(),
+               (SELECT s FROM generate_series(1, ${MAX_ADMINS}::int) AS s
+                WHERE s NOT IN (SELECT admin_slot FROM waitlist.admin_users WHERE status = 'active' AND admin_slot IS NOT NULL)
+                ORDER BY s LIMIT 1)
+        WHERE (SELECT count(*) FROM waitlist.admin_users) < ${MAX_ADMINS}
         ON CONFLICT DO NOTHING
         RETURNING id`.catch(() => []);
       if (created.length === 0) return { kind: "deny", reason: "not_authorized" };

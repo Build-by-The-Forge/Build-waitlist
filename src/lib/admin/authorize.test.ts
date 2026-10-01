@@ -12,7 +12,7 @@ const ctx = (over: Partial<SignInContext> = {}): SignInContext => ({
   bySubject: null,
   byEmail: null,
   adminCount: 0,
-  bootstrapEmail: "owner@gmail.com",
+  bootstrapEmails: ["owner@gmail.com"],
   ...over,
 });
 
@@ -39,16 +39,31 @@ describe("decideSignIn", () => {
     expect(d.kind).toBe("allow");
   });
 
-  it("bootstraps the first admin only for the bootstrap email, case-insensitively", () => {
+  it("bootstraps the first admin only for a configured bootstrap email, case-insensitively", () => {
     expect(decideSignIn(attempt(), ctx())).toEqual({ kind: "bootstrap" });
   });
 
-  it("never bootstraps once any admin row exists, even a disabled one", () => {
-    expect(decideSignIn(attempt(), ctx({ adminCount: 1 }))).toEqual({ kind: "deny", reason: "not_authorized" });
+  it("allows the second and third configured bootstrap emails while capacity remains", () => {
+    expect(
+      decideSignIn(attempt({ email: "second@gmail.com", subject: "google-sub-2" }), ctx({ adminCount: 1, bootstrapEmails: ["owner@gmail.com", "second@gmail.com", "third@gmail.com"] }))
+    ).toEqual({ kind: "bootstrap" });
+    expect(
+      decideSignIn(attempt({ email: "third@gmail.com", subject: "google-sub-3" }), ctx({ adminCount: 2, bootstrapEmails: ["owner@gmail.com", "second@gmail.com", "third@gmail.com"] }))
+    ).toEqual({ kind: "bootstrap" });
+  });
+
+  it("denies bootstrap once the configured capacity is exhausted", () => {
+    expect(decideSignIn(attempt({ email: "fourth@gmail.com", subject: "google-sub-4" }), ctx({ adminCount: 3, bootstrapEmails: ["owner@gmail.com", "second@gmail.com", "third@gmail.com", "fourth@gmail.com"] }))).toEqual({ kind: "deny", reason: "not_authorized" });
+  });
+
+  it("counts disabled rows against bootstrap capacity, so a seat is not reopened by config", () => {
+    expect(
+      decideSignIn(attempt({ email: "owner@gmail.com" }), ctx({ adminCount: 3, bootstrapEmails: ["owner@gmail.com", "second@gmail.com", "third@gmail.com"] }))
+    ).toEqual({ kind: "deny", reason: "not_authorized" });
   });
 
   it("denies bootstrap when no bootstrap email is configured", () => {
-    expect(decideSignIn(attempt(), ctx({ bootstrapEmail: null }))).toEqual({ kind: "deny", reason: "not_authorized" });
+    expect(decideSignIn(attempt(), ctx({ bootstrapEmails: [] }))).toEqual({ kind: "deny", reason: "not_authorized" });
   });
 
   it("denies a stranger with a valid Google account", () => {

@@ -12,7 +12,8 @@ declare module "next-auth" {
  * Admin authentication. Google proves identity; authorizeSignIn decides
  * access against waitlist.admin_users. There is no signup flow.
  *
- * Env: AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, ADMIN_BOOTSTRAP_EMAIL.
+ * Env: AUTH_SECRET, AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET,
+ * ADMIN_BOOTSTRAP_EMAIL_1..3 (legacy ADMIN_BOOTSTRAP_EMAIL fallback).
  */
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],

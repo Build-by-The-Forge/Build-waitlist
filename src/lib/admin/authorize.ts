@@ -27,9 +27,14 @@ export type SignInContext = {
   byEmail: AdminRecord | null;
   /** Rows in admin_users, any status. */
   adminCount: number;
-  /** ADMIN_BOOTSTRAP_EMAIL, normalized; null when unset. */
-  bootstrapEmail: string | null;
+  /** Configured bootstrap seeds (ADMIN_BOOTSTRAP_EMAIL_1..3), normalized. */
+  bootstrapEmails?: readonly string[];
+  /** Deprecated legacy single bootstrap email. */
+  bootstrapEmail?: string | null;
 };
+
+/** Most admin records seeding can ever create, and most active admins at once (DB-enforced). */
+export const MAX_ADMINS = 3;
 
 export type SignInDecision =
   | { kind: "allow"; adminId: number }
@@ -52,6 +57,13 @@ export function decideSignIn(attempt: SignInAttempt, ctx: SignInContext): SignIn
   // Everything below trusts the email address, so Google must have verified it.
   if (!attempt.emailVerified) return { kind: "deny", reason: "unverified_email" };
   const email = normalizeAdminEmail(attempt.email);
+  const bootstrapEmails = (
+    (ctx.bootstrapEmails && ctx.bootstrapEmails.length > 0
+      ? ctx.bootstrapEmails
+      : ctx.bootstrapEmail
+        ? [ctx.bootstrapEmail]
+        : [])
+  ).map(normalizeAdminEmail).filter(Boolean);
 
   // 2. Admin provisioned by email who hasn't signed in yet: bind this identity.
   if (ctx.byEmail) {
@@ -62,10 +74,11 @@ export function decideSignIn(attempt: SignInAttempt, ctx: SignInContext): SignIn
     return { kind: "bind", adminId: ctx.byEmail.id };
   }
 
-  // 3. First-ever sign-in: only the configured bootstrap email, only while the
-  //    admin table is completely empty. Replacing an admin later is a deliberate
-  //    database operation, not something a login can trigger.
-  if (ctx.adminCount === 0 && ctx.bootstrapEmail && email === ctx.bootstrapEmail) {
+  // 3. Seeding: a configured bootstrap email with no admin record yet, only
+  //    while fewer than MAX_ADMINS records exist in total. Disabled records
+  //    count, so disabling an admin never reopens a seat via configuration;
+  //    replacing an admin later is a deliberate database operation.
+  if (ctx.adminCount < MAX_ADMINS && bootstrapEmails.includes(email)) {
     return { kind: "bootstrap" };
   }
 

@@ -50,7 +50,7 @@ const TABLES = {
   ],
 };
 
-const CONSTRAINTS = {
+export const CONSTRAINTS = {
   signups: {
     signups_pkey: "primary key(id)",
     signups_email_normalized_key: "unique(email_normalized)",
@@ -82,7 +82,7 @@ const CONSTRAINTS = {
   },
 };
 
-const INDEXES = {
+export const INDEXES = {
   signups: {
     signups_pkey: "createuniqueindexsignups_pkeyonwaitlist.signupsusingbtree(id)",
     signups_email_normalized_key: "createuniqueindexsignups_email_normalized_keyonwaitlist.signupsusingbtree(email_normalized)",

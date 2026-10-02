@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
-    "db:baseline:legacy": "node --env-file-if-exists=.env.local scripts/baseline-legacy.mjs"
+    "db:baseline:legacy": "node --env-file-if-exists=.env.local scripts/baseline-legacy.mjs",
+    "db:preflight": "node --env-file-if-exists=.env.local scripts/preflight.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

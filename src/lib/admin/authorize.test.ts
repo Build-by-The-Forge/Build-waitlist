@@ -29,6 +29,19 @@ describe("decideSignIn", () => {
     expect(decideSignIn(attempt(), ctx({ bySubject: admin(), adminCount: 1 }))).toEqual({ kind: "allow", adminId: 1 });
   });
 
+  it("keeps each of the three existing Google identities on the same admin record on repeat sign-in", () => {
+    for (const [index, email] of ["one@example.com", "two@example.com", "three@example.com"].entries()) {
+      const id = index + 1;
+      const subject = `google-sub-${id}`;
+      const existing = admin({ id, email, providerSubject: subject });
+      const context = ctx({ bySubject: existing, adminCount: 3, bootstrapEmails: [] });
+      const signedIn = attempt({ email, subject });
+
+      expect(decideSignIn(signedIn, context)).toEqual({ kind: "allow", adminId: id });
+      expect(decideSignIn(signedIn, context)).toEqual({ kind: "allow", adminId: id });
+    }
+  });
+
   it("denies a disabled admin even with a matching subject", () => {
     const d = decideSignIn(attempt(), ctx({ bySubject: admin({ status: "disabled" }), adminCount: 1 }));
     expect(d).toEqual({ kind: "deny", reason: "disabled" });
@@ -50,6 +63,15 @@ describe("decideSignIn", () => {
     expect(
       decideSignIn(attempt({ email: "third@gmail.com", subject: "google-sub-3" }), ctx({ adminCount: 2, bootstrapEmails: ["owner@gmail.com", "second@gmail.com", "third@gmail.com"] }))
     ).toEqual({ kind: "bootstrap" });
+  });
+
+  it("denies an unconfigured fourth email before all administrator records exist", () => {
+    expect(
+      decideSignIn(
+        attempt({ email: "fourth@example.com", subject: "google-sub-4" }),
+        ctx({ adminCount: 2, bootstrapEmails: ["one@example.com", "two@example.com", "three@example.com"] }),
+      ),
+    ).toEqual({ kind: "deny", reason: "not_authorized" });
   });
 
   it("denies bootstrap once the configured capacity is exhausted", () => {

@@ -26,6 +26,17 @@ describe("parseBootstrapConfig", () => {
     ).toEqual(["one@example.com", "two@example.com"]);
   });
 
+  it("reads no more than the three supported numbered bootstrap variables", () => {
+    expect(
+      parseBootstrapConfig({
+        ADMIN_BOOTSTRAP_EMAIL_1: "one@example.com",
+        ADMIN_BOOTSTRAP_EMAIL_2: "two@example.com",
+        ADMIN_BOOTSTRAP_EMAIL_3: "three@example.com",
+        ADMIN_BOOTSTRAP_EMAIL_4: "four@example.com",
+      }).emails,
+    ).toEqual(["one@example.com", "two@example.com", "three@example.com"]);
+  });
+
   it("ignores duplicates and malformed entries", () => {
     expect(
       parseBootstrapConfig({

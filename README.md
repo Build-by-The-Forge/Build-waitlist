@@ -8,12 +8,12 @@ Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · Framer Mo
 
 ```bash
 npm install
-cp .env.example .env.local   # then set DATABASE_URL to a development database
+cp .env.example .env.local   # set DATABASE_URL and MIGRATION_DATABASE_URL to development databases
 npm run db:migrate
 npm run dev                  # http://localhost:3001 (pinned; matches NEXT_PUBLIC_SITE_URL)
 ```
 
-Signups need Postgres, because email verification relies on it. Point `DATABASE_URL` at a development database, never production. In development, leave `EMAIL_PROVIDER` unset: verification links are printed to the terminal instead of emailed.
+Signups need Postgres, because email verification relies on it. Point `DATABASE_URL` at a development database and `MIGRATION_DATABASE_URL` at a separate privileged development connection; never point local commands at production. In development, leave `EMAIL_PROVIDER` unset: verification links are printed to the terminal instead of emailed.
 
 ## Scripts
 
@@ -23,8 +23,9 @@ Signups need Postgres, because email verification relies on it. Point `DATABASE_
 | `npm run build` / `npm start` | Production build / serve |
 | `npm run lint` | ESLint (flat config, `eslint-config-next`) |
 | `npm run typecheck` | `tsc --noEmit` |
-| `npm test` | Vitest unit tests. Postgres integration tests also run when `TEST_DATABASE_URL` is set (use a disposable database) |
-| `npm run db:migrate` | Applies `db/migrations/*.sql` to `DATABASE_URL` (idempotent) |
+| `npm test` | Vitest tests; migration integration uses one disposable in-memory PGlite instance by default. The optional real-PostgreSQL path requires a loopback `MIGRATION_TEST_DATABASE_URL` whose database name includes test/migration/disposable. Email-verification integration tests run only when `TEST_DATABASE_URL` points at a disposable database |
+| `npm run db:migrate` | Applies pending migrations to `MIGRATION_DATABASE_URL`, recording checksums and `applied` provenance |
+| `npm run db:baseline:legacy` | Validates the legacy 001–005 schema and records those migrations as `baseline` without executing their SQL |
 
 ## Environment
 
@@ -32,6 +33,7 @@ Signups need Postgres, because email verification relies on it. Point `DATABASE_
 | --- | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | Production | Canonical URL for metadata, sitemap, and the API's origin check |
 | `DATABASE_URL` | Yes | Postgres connection string. Without it the API returns 500 rather than drop signups |
+| `MIGRATION_DATABASE_URL` | Migrations | Privileged connection used only by migration scripts; keep separate from the runtime role |
 | `EMAIL_PROVIDER` | Production | Primary provider: `brevo` in production; unset or `console` in development (links go to the server log) |
 | `BREVO_API_KEY` / `RESEND_API_KEY` | Production | Provider keys. With `EMAIL_PROVIDER=brevo`, setting `RESEND_API_KEY` enables Resend as the fallback |
 | `EMAIL_FROM` / `EMAIL_FROM_NAME` | Production | Sender address on a domain verified in both providers, and display name (`BUILD`) |
@@ -42,9 +44,19 @@ Signups need Postgres, because email verification relies on it. Point `DATABASE_
 | `WAITLIST_ALLOWED_ORIGINS` | No | Extra comma-separated origins allowed to POST (e.g. preview deploys) |
 | `AUTH_SECRET` | Admin | Signs admin sessions. Generate with `npx auth secret` |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Admin | Google OAuth client for admin sign-in |
-| `ADMIN_BOOTSTRAP_EMAIL` | Admin (first run) | The one Google account allowed to become the first admin, only while `waitlist.admin_users` is empty |
+| `ADMIN_BOOTSTRAP_EMAIL_1` / `_2` / `_3` | Admin (first run) | Up to three Google accounts that may bootstrap themselves as admins, only while fewer than three `waitlist.admin_users` rows exist (any status). Deployment-time seeds, not admin management. The legacy single `ADMIN_BOOTSTRAP_EMAIL` is read only when none of the numbered variables is set |
 | `AUTH_TRUST_HOST` | Self-hosting | Set to `true` behind your own proxy or host (not needed on Vercel) |
 | `ADMIN_TIMEZONE` | No | Time zone for dashboard dates (default `Africa/Lagos`) |
+
+## Database migrations
+
+`waitlist.schema_migrations` records each migration filename, SHA-256 checksum, timestamp, and provenance. `source = 'applied'` means the migration SQL ran in the same transaction as its ledger record. `source = 'baseline'` means a legacy schema was validated and recorded without replaying that migration SQL. The normal runner never infers history from table existence. It fails before applying pending migrations if a recorded checksum differs from the current file.
+
+For a fresh database, set `MIGRATION_DATABASE_URL` to a privileged migration connection and run `npm run db:migrate`; then configure the restricted runtime role separately. `waitlist_app` is runtime-only and must not receive DDL privileges.
+
+For a legacy database whose schema already represents migrations 001–005 but has no ledger, the explicit one-time procedure is `npm run db:baseline:legacy`, followed by `npm run db:migrate` to apply pending migrations such as 006. The baseline command validates columns, types, nullability, defaults, constraints, indexes, foreign keys, and serial sequences; it only records migrations 001–005 and never runs their SQL. It refuses schema drift, conflicting history, or checksum mismatches, and its validation plus ledger writes are transactional. Independently review the target, schema evidence, and command/environment before using this operation against production. The normal runner refuses to start on an untracked legacy database (existing `waitlist` tables with an empty ledger) rather than replay 001–005 or guess their history.
+
+Each migration SQL statement and its `applied` ledger insert commit or roll back together. If a migration fails, that migration's database changes and ledger row roll back; earlier migrations remain committed. Correct the underlying cause without editing a migration already recorded in the ledger, then retry. A checksum mismatch is a hard stop requiring review, not a warning to bypass.
 
 ## Page structure
 
@@ -171,21 +183,37 @@ verification service ─► email router ─► Brevo (primary) ─────�
 ### First-time setup
 
 1. In Google Cloud Console, go to **APIs & Services → Credentials → Create OAuth client ID** (Web application). Add the authorized redirect URI `https://<your-domain>/api/auth/callback/google` (and `http://localhost:3001/api/auth/callback/google` for local use).
-2. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `ADMIN_BOOTSTRAP_EMAIL` to your own Google address.
-3. Run `npm run db:migrate`, deploy, open `/admin/login`, and continue with that Google account. You become the admin. After that, `ADMIN_BOOTSTRAP_EMAIL` is ignored.
+2. Set `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, and `ADMIN_BOOTSTRAP_EMAIL_1` (optionally `_2`, `_3`) to the admins' Google addresses.
+3. Bring the schema up to date (see [Database migrations](#database-migrations); a legacy database is baselined first), deploy, open `/admin/login`, and each configured person continues with their Google account. Each takes the lowest free admin seat (1–3), keyed by their Google account id, not their email. Once three admin rows exist (any status), the bootstrap variables are ignored, and editing them never transfers an existing admin.
 
-### Managing the admin (database owner)
+### Managing admins (database owner)
 
 Admins are changed deliberately in SQL, never by signing in:
 
 ```sql
--- Replace the admin: disable the current one, then provision the new email.
--- The new person becomes admin on their first Google sign-in with that address.
-UPDATE waitlist.admin_users SET status = 'disabled' WHERE status = 'active';
-INSERT INTO waitlist.admin_users (email) VALUES ('new.admin@gmail.com');
+-- At most three admins are active at once: each active row holds a seat
+-- (admin_slot 1..3), enforced by the database.
 
--- Temporarily revoke access (takes effect on their next request):
-UPDATE waitlist.admin_users SET status = 'disabled' WHERE email = 'someone@gmail.com';
+-- Revoke access (takes effect on their next request) and free their seat:
+UPDATE waitlist.admin_users SET status = 'disabled', admin_slot = NULL
+WHERE email = 'someone@gmail.com';
+
+-- Provision a new admin in the lowest free seat. Inserts nothing when all
+-- three seats are taken. They become admin on their first Google sign-in
+-- with that address.
+INSERT INTO waitlist.admin_users (email, admin_slot)
+SELECT 'new.admin@gmail.com', s FROM generate_series(1, 3) AS s
+WHERE s NOT IN (SELECT admin_slot FROM waitlist.admin_users
+                WHERE status = 'active' AND admin_slot IS NOT NULL)
+ORDER BY s LIMIT 1;
+
+-- Restore a disabled admin into a free seat (fails if three are active):
+UPDATE waitlist.admin_users SET status = 'active', admin_slot = (
+  SELECT s FROM generate_series(1, 3) AS s
+  WHERE s NOT IN (SELECT admin_slot FROM waitlist.admin_users
+                  WHERE status = 'active' AND admin_slot IS NOT NULL)
+  ORDER BY s LIMIT 1)
+WHERE email = 'someone@gmail.com';
 
 -- Review recent admin activity:
 SELECT a.created_at, u.email, a.action, a.detail
@@ -199,7 +227,7 @@ ORDER BY a.created_at DESC LIMIT 50;
 
 ## Deploying
 
-1. Provision Postgres. Run `npm run db:migrate` as the owner, then create the app role with `db/roles.sql` and point `DATABASE_URL` at it. On Supabase, use the **transaction pooler (port 6543)** for Vercel; the app turns off prepared statements there automatically.
+1. Provision Postgres. For a fresh database, run `npm run db:migrate` with `MIGRATION_DATABASE_URL` set to the privileged migration connection, then create the app role with `db/roles.sql` and set runtime `DATABASE_URL` to that restricted role. For an existing legacy database, review and perform the explicit 001–005 baseline before running pending migrations. Never grant DDL privileges to `waitlist_app`. On Supabase, use the **transaction pooler (port 6543)** for Vercel; the app turns off prepared statements there automatically.
 2. Set `NEXT_PUBLIC_SITE_URL` to the production origin. It's baked in at build time and used for verification links. If it's unset on Vercel, the app falls back to Vercel's production domain (previews use their own deployment URL), never localhost.
 3. Set up email (see below) and set `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME` and `EMAIL_REPLY_TO`.
 4. Configure admin sign-in (see [First-time setup](#first-time-setup)) and bootstrap your admin account.
@@ -218,7 +246,7 @@ ORDER BY a.created_at DESC LIMIT 50;
 | `DATABASE_URL` 🔒 | development database | development database, **not** production | `postgresql://waitlist_app.<project-ref>:<password>@<pooler-host>:6543/postgres?sslmode=require` (transaction pooler, restricted role, TLS required) |
 | `AUTH_SECRET` 🔒 | local value | its own value | its own long random value |
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` 🔒 | Google client with the localhost redirect | same as production, or unset (admin login won't work on preview URLs) | Google client with the production redirect |
-| `ADMIN_BOOTSTRAP_EMAIL` | your Google address | your Google address | your Google address (only used while no admin exists) |
+| `ADMIN_BOOTSTRAP_EMAIL_1` / `_2` / `_3` | your Google address(es) | same as local, or unset | the admins' Google addresses (only used while fewer than three admin rows exist) |
 | `EMAIL_PROVIDER` | `brevo` (or unset = console) | `brevo` | `brevo` |
 | `EMAIL_FALLBACK_PROVIDER` | unset (auto) | unset (auto) | unset (auto = `resend` when its key is set) |
 | `BREVO_API_KEY` 🔒 | set | set | set |
@@ -233,7 +261,7 @@ ORDER BY a.created_at DESC LIMIT 50;
 - The Gmail sender works through Brevo only because Brevo rewrites it to a `brevosend.com` address. That hurts deliverability (more spam-folder risk). Move to a domain sender when available.
 - Admin login works only on the production URL, and on any preview URL whose callback you explicitly add to Google.
 
-Add these as encrypted environment variables, and keep Production and Preview/Development credentials separate: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_BOOTSTRAP_EMAIL`, `EMAIL_PROVIDER`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO`. None of these may use the `NEXT_PUBLIC_` prefix. Add the production Google OAuth redirect URI `https://<production-domain>/api/auth/callback/google`. Don't reuse local callback URLs. All verification state and rate limits live in Postgres, so nothing depends on instance memory or the filesystem.
+Add these as encrypted environment variables, and keep Production and Preview/Development credentials separate: `DATABASE_URL`, `NEXT_PUBLIC_SITE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `ADMIN_BOOTSTRAP_EMAIL_1`..`_3`, `EMAIL_PROVIDER`, `BREVO_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_FROM_NAME`, `EMAIL_REPLY_TO`. None of these may use the `NEXT_PUBLIC_` prefix. Add the production Google OAuth redirect URI `https://<production-domain>/api/auth/callback/google`. Don't reuse local callback URLs. All verification state and rate limits live in Postgres, so nothing depends on instance memory or the filesystem.
 
 ### Email deliverability
 
